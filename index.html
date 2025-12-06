@@ -305,8 +305,8 @@ function startBattle() {
 
   if (A_TTD.time === Infinity && B_TTD.time === Infinity) {
     msg = `
-        나의 남은 체력: ${A_TTD.hp.toFixed(2)}s<br>
-        적의 남은 체력: ${B_TTD.hp.toFixed(2)}s<br><br>
+        나의 남은 체력: ${A_TTD.hp.toFixed(2)}<br>
+        적의 남은 체력: ${B_TTD.hp.toFixed(2)}<br><br>
     `;
 
     if (A_TTD.hp > B_TTD.hp)
@@ -355,26 +355,6 @@ function logTimeline(logA, logB, delayA, delayB) {
     tb.appendChild(row);
   }
 }
-
-/* -----------------------------------------------------------
-   JSON Loader + Sample
------------------------------------------------------------ */
-document.getElementById("jsonLoad").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const data = JSON.parse(ev.target.result);
-    Object.entries(data).forEach(([prefix, stats]) => {
-      Object.entries(stats).forEach(([k, v]) => {
-        const el = document.getElementById(`${prefix}_${k}`);
-        if (el) el.value = v;
-      });
-    });
-  };
-  reader.readAsText(file);
-});
 
 </script>
 
