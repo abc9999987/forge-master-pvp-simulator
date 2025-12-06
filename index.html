@@ -198,6 +198,15 @@ function createInputs(container, prefix) {
       <span>${label}</span>
       <input type="number" id="${prefix}_${key}" value="0" step="0.01">
     `;
+
+    const input = row.querySelector("input");
+    input.addEventListener("input", () => {
+      if (['doubleproc', 'critproc'].includes(key)) {
+        if (input.value > 100) input.value = 100;
+      }
+      if (input.value < 0) input.value = 0; // 음수 방지 옵션 (원하면 제거)
+    });
+
     container.appendChild(row);
   });
 }
