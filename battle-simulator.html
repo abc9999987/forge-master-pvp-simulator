@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Forge Master PVP 예측</title>
+
+  <style>
+    /* ------------------------------
+    Minimal + Cute UI Theme
+    ------------------------------ */
+    body {
+        font-family: "Nunito", "Pretendard", sans-serif;
+        background: #faf7f5;
+        color: #333;
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    h1 {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        color: #ff8a7a;
+    }
+
+    h3 {
+        font-weight: 700;
+        margin-top: 0;
+        color: #555;
+    }
+
+    /* Panel */
+    .panel {
+        background: white;
+        padding: 25px;
+        margin-bottom: 25px;
+        border-radius: 18px;
+        width: 360px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: 2px solid #ffe1dc;
+    }
+
+    /* Layout */
+    .wrap {
+        display: flex;
+        gap: 40px;
+        margin-bottom: 20px;
+    }
+
+    /* Label + Input */
+    label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 8px 0;
+        font-size: 14px;
+        color: #444;
+    }
+
+    input[type="number"] {
+        width: 90px;
+        padding: 6px 8px;
+        border-radius: 10px;
+        border: 1.8px solid #ffc5bc;
+        background: #fff6f5;
+        font-size: 13px;
+    }
+
+    /* Button */
+    button {
+        background: #ff8a7a;
+        color: white;
+        padding: 12px 26px;
+        border-radius: 14px;
+        border: none;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 700;
+        margin-top: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    }
+
+    button:hover { background: #ff7a68; }
+
+    /* Result */
+    #battleResult {
+        margin-top: 20px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #ff6b5a;
+        text-align: center;
+    }
+
+    /* Log table wrapper */
+    #logWrapper {
+        max-height: 260px;
+        overflow-y: auto;
+        width: 530px;
+        margin-top: 20px;
+        background: white;
+        border-radius: 14px;
+        border: 2px solid #ffd7d1;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    table th {
+        background: #ffe6e2;
+        padding: 10px;
+        position: sticky;
+        top: 0;
+        font-weight: 700;
+        color: #444;
+    }
+
+    table td {
+        padding: 8px;
+        border-bottom: 1px solid #f5d2cc;
+        text-align: center;
+        color: #333;
+    }
+
+    .highlight {
+        background: #fff0ec;
+        font-weight: 700;
+        color: #ff6b5a;
+    }
+    </style>
+</head>
+
+<body>
+
+  <h1>Forge Master PVP 예측</h1>
+
+  <div class="wrap">
+    <div class="panel" id="blockA">
+      <h3>나</h3>
+      <div class="groupA"></div>
+    </div>
+
+    <div class="panel" id="blockB">
+      <h3>적</h3>
+      <div class="groupB"></div>
+    </div>
+  </div>
+
+  <button onclick="startBattle()">전투 시작!</button>
+
+  <p style="margin-top: 12px; font-size: 14px; color: #666; text-align: center;">
+    전투는 최대 60초 동안 진행되며, 먼저 상대를 쓰러뜨리거나 시간이 종료되었을 때 체력이 더 많이 남은 쪽이 승리합니다.
+  </p>
+
+  <h2 id="battleResult"></h2>
+  
+  <div id="logWrapper">
+    <table id="logTable">
+        <thead>
+        <tr>
+            <th>전투 시간 (sec)</th>
+            <th>나</th>
+            <th>적</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+  </div>
+
+<script>
+/* -----------------------------------------------------------
+   UI Generator: automatically creates stat inputs
+----------------------------------------------------------- */
+const STAT_FIELDS = [
+  ["power", "총 피해"],
+  ["hitrate", "기본 공격 속도"],
+  ["speedbuff", "공격 속도(%)"],
+  ["doubleproc", "더블 찬스(%)"],
+  ["critproc", "치명타 확률(%)"],
+  ["critbonus", "치명타 피해(%)"],
+  ["drain", "생명력 흡수(%)"],
+  ["regen", "체력 재생(%)"],
+  ["guard", "블록 확률(%)"],
+  ["vital", "총 체력"],
+  ["hpmult", "PVP 체력 보정(%)"],
+  ["startup", "근접 딜레이(초)"]
+];
+
+function createInputs(container, prefix) {
+  STAT_FIELDS.forEach(([key, label]) => {
+    const row = document.createElement("label");
+    row.innerHTML = `
+      <span>${label}</span>
+      <input type="number" id="${prefix}_${key}" value="0" step="0.01">
+    `;
+    container.appendChild(row);
+  });
+}
+
+createInputs(document.querySelector(".groupA"), "a");
+createInputs(document.querySelector(".groupB"), "b");
+
+document.getElementById("a_power").value = 100;
+document.getElementById("a_hitrate").value = 0.588;
+document.getElementById("a_vital").value = 1000;
+document.getElementById("a_hpmult").value = 500;
+
+document.getElementById("b_power").value = 100;
+document.getElementById("b_hitrate").value = 0.588;
+document.getElementById("b_vital").value = 1000;
+document.getElementById("b_hpmult").value = 500;
+
+/* -----------------------------------------------------------
+   Helper
+----------------------------------------------------------- */
+function num(id) { return +document.getElementById(id).value; }
+
+function pretty(n) {
+  return Math.abs(n) >= 1e6
+    ? (n / 1e6).toFixed(2) + "M"
+    : Math.abs(n) >= 1e3
+    ? (n / 1e3).toFixed(2) + "K"
+    : n.toFixed(2);
+}
+
+/* -----------------------------------------------------------
+   Core Combat Math (rewritten structure)
+----------------------------------------------------------- */
+function loadFighter(prefix) {
+  const maxHP = num(prefix + "_vital") * (num(prefix + "_hpmult") / 100);
+
+  return {
+    power: num(prefix + "_power"),
+    hits: num(prefix + "_hitrate"),
+    aspd: num(prefix + "_speedbuff") / 100,
+    dbl: num(prefix + "_doubleproc") / 100,
+    crit: num(prefix + "_critproc") / 100,
+    critDmg: 1.2 + (num(prefix + "_critbonus") / 100),
+    drain: num(prefix + "_drain") / 100,
+    regen: num(prefix + "_regen") / 100,
+    block: num(prefix + "_guard") / 100,
+    hp0: num(prefix + "_vital"),
+    hpMax: maxHP,
+    delay: num(prefix + "_startup")
+  };
+}
+
+function damagePerSecond(f) {
+  const expectedHit =
+      f.power *
+      ((1 - f.dbl) * (1 - f.crit) +
+       (f.dbl * 2) * (1 - f.crit) +
+       (1 - f.dbl) * f.crit * f.critDmg +
+       f.dbl * 2 * f.crit * f.critDmg);
+
+  return expectedHit * f.hits * (1 + f.aspd);
+}
+
+function fightTTD(defender, attacker) {
+  const atkDPS = damagePerSecond(attacker) * (1 - defender.block);
+  const rawDPS = damagePerSecond(defender) * defender.drain;
+
+  let hp = defender.hpMax;
+  let t = 0;
+  const dt = 0.1;
+
+  const timeline = [];
+
+  while (hp > 0 && t < 60) {
+    const heal = defender.hp0 * defender.regen + (t >= defender.delay ? rawDPS : 0);
+    const taken = t >= attacker.delay ? atkDPS : 0;
+    const net = taken - heal;
+
+    if (net > 0) hp -= net * dt;
+
+    timeline.push([t.toFixed(1), hp]);
+
+    t += dt;
+  }
+
+  return { time: hp > 0 ? Infinity : t, log: timeline, hp };
+}
+
+/* -----------------------------------------------------------
+   Simulation Runner
+----------------------------------------------------------- */
+function startBattle() {
+  const A = loadFighter("a");
+  const B = loadFighter("b");
+
+  const A_TTD = fightTTD(A, B);
+  const B_TTD = fightTTD(B, A);
+
+  const out = document.getElementById("battleResult");
+
+  let msg = `
+    내가 쓰러진 시간: ${A_TTD.time.toFixed(2)}s<br>
+    적이 쓰러진 시간: ${B_TTD.time.toFixed(2)}s<br><br>
+  `;
+
+  if (A_TTD.time === Infinity && B_TTD.time === Infinity) {
+    msg = `
+        나의 남은 체력: ${A_TTD.hp.toFixed(2)}s<br>
+        적의 남은 체력: ${B_TTD.hp.toFixed(2)}s<br><br>
+    `;
+
+    if (A_TTD.hp > B_TTD.hp)
+      msg += "🥇 승리";
+    else if (B_TTD.hp > A_TTD.hp)
+      msg += "☠️ 패배";
+    else
+    msg += "🤝 무승부";
+  } else if (A_TTD.time > B_TTD.time)
+    msg += "🥇 승리";
+  else if (B_TTD.time > A_TTD.time)
+    msg += "☠️ 패배";
+  else
+    msg += "🤝 무승부";
+
+  out.innerHTML = msg;
+
+  logTimeline(A_TTD.log, B_TTD.log, A.delay, B.delay);
+}
+
+/* -----------------------------------------------------------
+   Debug timeline table
+----------------------------------------------------------- */
+function logTimeline(logA, logB, delayA, delayB) {
+  const tb = document.querySelector("#logTable tbody");
+  tb.innerHTML = "";
+
+  const len = Math.max(logA.length, logB.length);
+
+  for (let i = 0; i < len; i++) {
+    const a = logA[i] || [];
+    const b = logB[i] || [];
+    const t = a[0] || b[0];
+
+    const row = document.createElement("tr");
+
+    const isAStart = +t === +delayA;
+    const isBStart = +t === +delayB;
+
+    row.innerHTML = `
+      <td>${t}</td>
+      <td class="${isAStart ? "highlight" : ""}">${a[1] ? pretty(+a[1]) : ""}</td>
+      <td class="${isBStart ? "highlight" : ""}">${b[1] ? pretty(+b[1]) : ""}</td>
+    `;
+
+    tb.appendChild(row);
+  }
+}
+
+/* -----------------------------------------------------------
+   JSON Loader + Sample
+----------------------------------------------------------- */
+document.getElementById("jsonLoad").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const data = JSON.parse(ev.target.result);
+    Object.entries(data).forEach(([prefix, stats]) => {
+      Object.entries(stats).forEach(([k, v]) => {
+        const el = document.getElementById(`${prefix}_${k}`);
+        if (el) el.value = v;
+      });
+    });
+  };
+  reader.readAsText(file);
+});
+
+</script>
+
+</body>
+</html>
