@@ -362,7 +362,7 @@ const SKILL_DATA = {
   // 전설
   '운석': { name: '운석', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
   '폭탄': { name: '폭탄', isBuff: false, damage: 336000, hit: 1, cooltime: 5, defaultCooltime: 7 },
-  '사기': { name: '사기', isBuff: true, damage: 0, hit: 0, addAtk: 74100, addHP: 593000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 10 },
+  '사기': { name: '사기', isBuff: true, damage: 0, hit: 0, addAtk: 44800, addHP: 358000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 10 },
   // 궁극
   '쇄도': { name: '쇄도', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
   '벌레': { name: '벌레', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
