@@ -164,6 +164,20 @@
       background: #fffaf9;
       font-size: 14px;
     }
+    .skill-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background-image: url('skills.png');
+      background-repeat: no-repeat;
+      /* default to full sheet (48px width x 864px height) so each slice is 48x48 */
+      background-size: 48px 864px;
+      background-position: 0px 0px;
+      margin-left: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      visibility: hidden;
+      flex: 0 0 48px;
+    }
 
     </style>
 </head>
@@ -275,19 +289,82 @@ document.getElementById('b_hpmult').value = 500;
 /* -----------------------------------------------------------
    Skill selector: dynamic options and UI
 ----------------------------------------------------------- */
-const SKILL_OPTIONS = ['기본 공격', '스킬 A', '스킬 B'];
+const SKILL_NAME = [
+  '외침', '화살', '고기', 
+  '수리검', '포격', '광전사',
+  '가시', '화살비', '버프',
+  '운석', '폭탄', '사기',
+  '쇄도', '벌레', '번개',
+  '기총소사', '드론', '높은 사기'
+];
+
+// 관리자가 특정 상황에서 드롭다운에서 선택을 금지하고 싶은 스킬을
+// 이 배열에 추가하면 해당 스킬은 모든 셀렉트에서 비활성화됩니다.
+// 예: const IGNORE_SKILLS = ['고기', '드론'];
+const IGNORE_SKILLS = ['고기', '광전사', '버프', '사기', '높은 사기'];
 
 function createSelect(idPrefix) {
+  const wrapper = document.createElement('div');
+  wrapper.style.display = 'flex';
+  wrapper.style.alignItems = 'center';
+
   const sel = document.createElement('select');
   sel.className = 'skill-select';
   sel.id = idPrefix;
-  SKILL_OPTIONS.forEach(opt => {
+
+  // 기본 비선택 옵션
+  const empty = document.createElement('option');
+  empty.value = '';
+  empty.textContent = '--선택--';
+  sel.appendChild(empty);
+
+  SKILL_NAME.forEach(opt => {
     const o = document.createElement('option');
     o.value = opt;
     o.textContent = opt;
+    // 만약 IGNORE 목록에 있으면 기본적으로 비활성화
+    if (IGNORE_SKILLS.includes(opt)) o.disabled = true;
     sel.appendChild(o);
   });
-  return sel;
+
+  const icon = document.createElement('div');
+  icon.className = 'skill-icon';
+
+  sel.addEventListener('change', () => {
+    const container = sel.closest('.skill-column');
+    if (container) updateExclusiveForContainer(container);
+    updateSkillIconForSelect(sel);
+  });
+
+  wrapper.appendChild(sel);
+  wrapper.appendChild(icon);
+  return wrapper;
+}
+
+function updateExclusiveForContainer(container) {
+  const selects = Array.from(container.querySelectorAll('select'));
+  const chosen = selects.map(s => s.value).filter(v => v);
+
+  selects.forEach(s => {
+    Array.from(s.options).forEach(opt => {
+      if (!opt.value) { // '--선택--'
+        opt.disabled = false;
+        return;
+      }
+
+      const isIgnored = IGNORE_SKILLS.includes(opt.value);
+
+      // 현재 select에서 선택한 값은 유지(선택 가능 상태로 보이도록),
+      // 단, 관리자가 완전히 금지하길 원하면 isIgnored 처리만으로도 됨.
+      if (s.value === opt.value) {
+        // keep selected option enabled so it displays as selected
+        opt.disabled = false;
+      } else {
+        // disabled if it's either chosen by another select or listed in IGNORE_SKILLS
+        opt.disabled = isIgnored || chosen.includes(opt.value);
+      }
+    });
+  });
 }
 
 function renderSkillSelectors() {
@@ -299,16 +376,60 @@ function renderSkillSelectors() {
   [...right.querySelectorAll('select')].forEach(n => n.remove());
 
   for (let i = 1; i <= 3; i++) {
-    const sL = createSelect('left_skill_' + i);
-    left.appendChild(sL);
+    const sLwrap = createSelect('left_skill_' + i);
+    left.appendChild(sLwrap);
 
-    const sR = createSelect('right_skill_' + i);
-    right.appendChild(sR);
+    const sRwrap = createSelect('right_skill_' + i);
+    right.appendChild(sRwrap);
   }
+
+  // 초기 상태에서 중복 선택 불가 적용
+  updateExclusiveForContainer(left);
+  updateExclusiveForContainer(right);
+}
+
+// 스프라이트 행 인덱스는 `SKILL_NAME` 배열의 순서(index)와 일치합니다.
+
+function updateSkillIconForSelect(sel) {
+  const wrapper = sel.parentElement;
+  const icon = wrapper.querySelector('.skill-icon');
+  if (!icon) return;
+
+  const v = sel.value;
+  if (!v || SKILL_NAME.indexOf(v) === -1) {
+    icon.style.visibility = 'hidden';
+    return;
+  }
+
+  const idx = SKILL_NAME.indexOf(v);
+  const SLICE_H = 48;
+  const SHEET_H = 864; // fixed full image height in pixels
+
+  if (idx < 0 || idx * SLICE_H >= SHEET_H) {
+    icon.style.visibility = 'hidden';
+    return;
+  }
+
+  icon.style.backgroundSize = `48px ${SHEET_H}px`;
+  const posY = -(idx * SLICE_H);
+  icon.style.backgroundPosition = `0px ${posY}px`;
+  icon.style.visibility = 'visible';
+}
+
+function updateAllSkillIcons(container) {
+  const selects = container.querySelectorAll('select');
+    selects.forEach(s => {
+      updateSkillIconForSelect(s);
+    });
 }
 
 // initial render
 renderSkillSelectors();
+  // 초기 아이콘 상태 업데이트
+  const left = document.getElementById('mySkills');
+  const right = document.getElementById('enemySkills');
+  updateAllSkillIcons(left);
+  updateAllSkillIcons(right);
 
 /* -----------------------------------------------------------
    Helper
