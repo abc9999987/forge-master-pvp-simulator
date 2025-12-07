@@ -204,7 +204,7 @@ function createInputs(container, prefix) {
       if (['doubleproc', 'critproc'].includes(key)) {
         if (input.value > 100) input.value = 100;
       }
-      if (input.value < 0) input.value = 0; // 음수 방지 옵션 (원하면 제거)
+      if (input.value < 0) input.value = 0;
     });
 
     container.appendChild(row);
