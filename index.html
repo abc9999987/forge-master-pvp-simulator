@@ -388,10 +388,9 @@ const SKILL_NAME = [
 // 이 배열에 추가하면 해당 스킬은 모든 셀렉트에서 비활성화됩니다.
 // 예: const IGNORE_SKILLS = ['고기', '드론'];
 const IGNORE_SKILLS = [
-  '사기', '높은 사기',
-  '운석', '사기',
+  '운석',
   '쇄도', '벌레', '번개',
-  '기총소사', '드론', '높은 사기'
+  '기총소사', '드론'
 ];
 
 function createSelect(idPrefix) {
@@ -576,7 +575,7 @@ const SKILL_DATA = {
   // 희귀
   '수리검': { name: '수리검', isBuff: false, damage: 316, hit: 5, cooltime: 5, defaultCooltime: 4 },
   '포격': { name: '포격', isBuff: false, damage: 527, hit: 3, cooltime: 5, defaultCooltime: 5 },
-  '광전사': { name: '광전사', isBuff: true, damage: 0, hit: 0, addAtk: 1560, addHP: 0, cooltime: 5, defaultCooltime: 9, bufftime: 0, defaultBufftime: 9 },
+  '광전사': { name: '광전사', isBuff: true, damage: 0, hit: 0, addAtk: 1560, addHP: 0, cooltime: 5, defaultCooltime: 9, bufftime: 0, defaultBufftime: 10 },
   // 서사시
   '가시': { name: '가시', isBuff: false, damage: 24800, hit: 2, cooltime: 5, defaultCooltime: 6 },
   '화살비': { name: '화살비', isBuff: false, damage: 14500, hit: 8, cooltime: 5, defaultCooltime: 11 },
@@ -584,7 +583,7 @@ const SKILL_DATA = {
   // 전설
   '운석': { name: '운석', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
   '폭탄': { name: '폭탄', isBuff: false, damage: 336000, hit: 1, cooltime: 5, defaultCooltime: 7 },
-  '사기': { name: '사기', isBuff: true, damage: 0, hit: 0, addAtk: 0, addHP: 0, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
+  '사기': { name: '사기', isBuff: true, damage: 0, hit: 0, addAtk: 74100, addHP: 593000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 10 },
   // 궁극
   '쇄도': { name: '쇄도', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
   '벌레': { name: '벌레', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
@@ -592,7 +591,7 @@ const SKILL_DATA = {
   // 신화
   '기총소사': { name: '기총소사', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
   '드론': { name: '드론', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
-  '높은 사기': { name: '높은 사기', isBuff: true, damage: 0, hit: 0, addAtk: 0, addHP: 0, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 }
+  '높은 사기': { name: '높은 사기', isBuff: true, damage: 0, hit: 0, addAtk: 2000000, addHP: 16000000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 8 }
 };
 
 // 기본값 반환. SKILL_DATA에 정의되지 않은 스킬을 안전하게 처리하기 위함.
