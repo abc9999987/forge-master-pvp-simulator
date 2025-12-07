@@ -570,20 +570,20 @@ function escapeHtml(str) {
 // 모든 Skill은 전투 시작 시 5초의 cooltime이 적용됨.
 const SKILL_DATA = {
   // 일반
-  '외침': { name: '외침', isBuff: false, damage: 22, hit: 6, cooltime: 5, defaultCooltime: 10 },
-  '화살': { name: '화살', isBuff: false, damage: 78, hit: 3, cooltime: 5, defaultCooltime: 10 },
-  '고기': { name: '고기', isBuff: true, damage: 0, hit: 0, addAtk: 0, addHP: 118, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
+  '외침': { name: '외침', isBuff: false, damage: 22, hit: 6, cooltime: 5, defaultCooltime: 6 },
+  '화살': { name: '화살', isBuff: false, damage: 78, hit: 3, cooltime: 5, defaultCooltime: 7 },
+  '고기': { name: '고기', isBuff: true, damage: 0, hit: 0, addAtk: 0, addHP: 118, cooltime: 5, defaultCooltime: 8, bufftime: 0, defaultBufftime: 10 },
   // 희귀
-  '수리검': { name: '수리검', isBuff: false, damage: 316, hit: 5, cooltime: 5, defaultCooltime: 10 },
-  '포격': { name: '포격', isBuff: false, damage: 527, hit: 3, cooltime: 5, defaultCooltime: 10 },
-  '광전사': { name: '광전사', isBuff: true, damage: 0, hit: 0, addAtk: 1560, addHP: 0, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
+  '수리검': { name: '수리검', isBuff: false, damage: 316, hit: 5, cooltime: 5, defaultCooltime: 4 },
+  '포격': { name: '포격', isBuff: false, damage: 527, hit: 3, cooltime: 5, defaultCooltime: 5 },
+  '광전사': { name: '광전사', isBuff: true, damage: 0, hit: 0, addAtk: 1560, addHP: 0, cooltime: 5, defaultCooltime: 9, bufftime: 0, defaultBufftime: 9 },
   // 서사시
   '가시': { name: '가시', isBuff: false, damage: 24800, hit: 2, cooltime: 5, defaultCooltime: 6 },
-  '화살비': { name: '화살비', isBuff: false, damage: 218000, hit: 1, cooltime: 5, defaultCooltime: 10 },
-  '버프': { name: '버프', isBuff: true, damage: 0, hit: 0, addAtk: 12000, addHP: 96000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
+  '화살비': { name: '화살비', isBuff: false, damage: 218000, hit: 1, cooltime: 5, defaultCooltime: 11 },
+  '버프': { name: '버프', isBuff: true, damage: 0, hit: 0, addAtk: 12000, addHP: 96000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 10 },
   // 전설
   '운석': { name: '운석', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
-  '폭탄': { name: '폭탄', isBuff: false, damage: 336000, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '폭탄': { name: '폭탄', isBuff: false, damage: 336000, hit: 1, cooltime: 5, defaultCooltime: 7 },
   '사기': { name: '사기', isBuff: true, damage: 0, hit: 0, addAtk: 0, addHP: 0, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
   // 궁극
   '쇄도': { name: '쇄도', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
