@@ -698,6 +698,8 @@ function battleSimulation(defender, attacker, attackerSkillName) {
           // 버프 지속 시간 종료 시 체력의 비율 만큼 원래 상태로 복원
           hp = defender.hpMax * (hp / hpMax);
           hpMax = defender.hpMax;
+          // 버프 지속 시간 종료 시 원래 상태로 복원
+          defender.power -= defSkill.addAtk;
           // 버프의 경우 지속 시간 종료 시점에 cooltime 시작됨.
           defSkill.cooltime = defSkill.bufftime + defSkill.defaultCooltime * (1 - defender.skillReduceCooltime);
         }
@@ -705,6 +707,7 @@ function battleSimulation(defender, attacker, attackerSkillName) {
         if (t === defSkill.cooltime * 10) {
           if (defSkill.isBuff === true) {
             // 버프 스킬 처리 로직 (예: 공격력 증가, 체력 증가 등)
+            defender.power += defSkill.addAtk;
             hp += (defSkill.addHP * defenderHpMult);
             hpMax = defender.hpMax + (defSkill.addHP * defenderHpMult);
             defSkill.bufftime = t/10 + defSkill.defaultBufftime;
@@ -755,9 +758,6 @@ function battleSimulation(defender, attacker, attackerSkillName) {
     // attacker의 히트 타이밍에 맞춰 데미지 적용
     if (t === hitTimer) {
       const damage = getDamageByHit(attacker) * (1 - defender.block);
-      if (attackerSkillName === 'mySkills') {
-        console.log(t, '데미지: ', damage, '현재 체력: ', hp, '남은 체력: ', hp - damage);
-      }
       hp -= damage;
       hitTimer += hitBySec;
     }
