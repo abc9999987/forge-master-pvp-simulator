@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset='UTF-8' />
   <title>Forge Master PVP 예측</title>
 
   <style>
@@ -9,7 +9,7 @@
     Minimal + Cute UI Theme
     ------------------------------ */
     body {
-        font-family: "Nunito", "Pretendard", sans-serif;
+        font-family: 'Nunito', 'Pretendard', sans-serif;
         background: #faf7f5;
         color: #333;
         padding: 40px;
@@ -59,7 +59,7 @@
         color: #444;
     }
 
-    input[type="number"] {
+    input[type='number'] {
         width: 90px;
         padding: 6px 8px;
         border-radius: 10px;
@@ -139,28 +139,28 @@
 
   <h1>Forge Master PVP 예측</h1>
 
-  <div class="wrap">
-    <div class="panel" id="blockA">
+  <div class='wrap'>
+    <div class='panel' id='blockA'>
       <h3>나</h3>
-      <div class="groupA"></div>
+      <div class='groupA'></div>
     </div>
 
-    <div class="panel" id="blockB">
+    <div class='panel' id='blockB'>
       <h3>적</h3>
-      <div class="groupB"></div>
+      <div class='groupB'></div>
     </div>
   </div>
 
-  <button onclick="startBattle()">전투 시작!</button>
+  <button onclick='startBattle()'>전투 시작!</button>
 
-  <p style="margin-top: 12px; font-size: 14px; color: #666; text-align: center;">
+  <p style='margin-top: 12px; font-size: 14px; color: #666; text-align: center;'>
     전투는 최대 60초 동안 진행되며, 먼저 상대를 쓰러뜨리거나 시간이 종료되었을 때 체력이 더 많이 남은 쪽이 승리합니다.
   </p>
 
-  <h2 id="battleResult"></h2>
+  <h2 id='battleResult'></h2>
   
-  <div id="logWrapper">
-    <table id="logTable">
+  <div id='logWrapper'>
+    <table id='logTable'>
         <thead>
         <tr>
             <th>전투 시간 (sec)</th>
@@ -177,30 +177,30 @@
    UI Generator: automatically creates stat inputs
 ----------------------------------------------------------- */
 const STAT_FIELDS = [
-  ["power", "총 피해"],
-  ["hitrate", "기본 공격 속도"],
-  ["speedbuff", "공격 속도(%)"],
-  ["doubleproc", "더블 찬스(%)"],
-  ["critproc", "치명타 확률(%)"],
-  ["critbonus", "치명타 피해(%)"],
-  ["drain", "생명력 흡수(%)"],
-  ["regen", "체력 재생(%)"],
-  ["guard", "블록 확률(%)"],
-  ["vital", "총 체력"],
-  ["hpmult", "PVP 체력 보정(%)"],
-  ["startup", "근접 딜레이(초)"]
+  ['power', '총 피해'],
+  ['hitrate', '기본 공격 속도'],
+  ['speedbuff', '공격 속도(%)'],
+  ['doubleproc', '더블 찬스(%)'],
+  ['critproc', '치명타 확률(%)'],
+  ['critbonus', '치명타 피해(%)'],
+  ['drain', '생명력 흡수(%)'],
+  ['regen', '체력 재생(%)'],
+  ['guard', '블록 확률(%)'],
+  ['vital', '총 체력'],
+  ['hpmult', 'PVP 체력 보정(%)'],
+  ['startup', '근접 딜레이(초)']
 ];
 
 function createInputs(container, prefix) {
   STAT_FIELDS.forEach(([key, label]) => {
-    const row = document.createElement("label");
+    const row = document.createElement('label');
     row.innerHTML = `
       <span>${label}</span>
-      <input type="number" id="${prefix}_${key}" value="0" step="0.01">
+      <input type='number' id='${prefix}_${key}' value='0' step='0.01'>
     `;
 
-    const input = row.querySelector("input");
-    input.addEventListener("input", () => {
+    const input = row.querySelector('input');
+    input.addEventListener('input', () => {
       if (['doubleproc', 'critproc'].includes(key)) {
         if (input.value > 100) input.value = 100;
       }
@@ -211,18 +211,18 @@ function createInputs(container, prefix) {
   });
 }
 
-createInputs(document.querySelector(".groupA"), "a");
-createInputs(document.querySelector(".groupB"), "b");
+createInputs(document.querySelector('.groupA'), 'a');
+createInputs(document.querySelector('.groupB'), 'b');
 
-document.getElementById("a_power").value = 100;
-document.getElementById("a_hitrate").value = 0.588;
-document.getElementById("a_vital").value = 1000;
-document.getElementById("a_hpmult").value = 500;
+document.getElementById('a_power').value = 100;
+document.getElementById('a_hitrate').value = 1;
+document.getElementById('a_vital').value = 1000;
+document.getElementById('a_hpmult').value = 500;
 
-document.getElementById("b_power").value = 100;
-document.getElementById("b_hitrate").value = 0.588;
-document.getElementById("b_vital").value = 1000;
-document.getElementById("b_hpmult").value = 500;
+document.getElementById('b_power').value = 100;
+document.getElementById('b_hitrate').value = 1;
+document.getElementById('b_vital').value = 1000;
+document.getElementById('b_hpmult').value = 500;
 
 /* -----------------------------------------------------------
    Helper
@@ -231,9 +231,9 @@ function num(id) { return +document.getElementById(id).value; }
 
 function pretty(n) {
   return Math.abs(n) >= 1e6
-    ? (n / 1e6).toFixed(2) + "M"
+    ? (n / 1e6).toFixed(2) + 'M'
     : Math.abs(n) >= 1e3
-    ? (n / 1e3).toFixed(2) + "K"
+    ? (n / 1e3).toFixed(2) + 'K'
     : n.toFixed(2);
 }
 
@@ -241,95 +241,109 @@ function pretty(n) {
    Core Combat Math (rewritten structure)
 ----------------------------------------------------------- */
 function loadFighter(prefix) {
-  const maxHP = num(prefix + "_vital") * (num(prefix + "_hpmult") / 100);
+  const maxHP = num(prefix + '_vital') * (num(prefix + '_hpmult') / 100);
 
   return {
-    power: num(prefix + "_power"),
-    hits: num(prefix + "_hitrate"),
-    aspd: num(prefix + "_speedbuff") / 100,
-    dbl: num(prefix + "_doubleproc") / 100,
-    crit: num(prefix + "_critproc") / 100,
-    critDmg: 1.2 + (num(prefix + "_critbonus") / 100),
-    drain: num(prefix + "_drain") / 100,
-    regen: num(prefix + "_regen") / 100,
-    block: num(prefix + "_guard") / 100,
-    hp0: num(prefix + "_vital"),
+    power: num(prefix + '_power'),
+    hits: num(prefix + '_hitrate'),
+    attackSpeed: num(prefix + '_speedbuff') / 100,
+    dbAttackRate: num(prefix + '_doubleproc') / 100,
+    critRate: num(prefix + '_critproc') / 100,
+    critDmg: 1.2 + (num(prefix + '_critbonus') / 100),
+    drain: num(prefix + '_drain') / 100,
+    regen: num(prefix + '_regen') / 100,
+    block: num(prefix + '_guard') / 100,
+    hp0: num(prefix + '_vital'),
     hpMax: maxHP,
-    delay: num(prefix + "_startup")
+    delay: num(prefix + '_startup')
   };
 }
 
-function damagePerSecond(f) {
-  const expectedHit =
-      f.power *
-      ((1 - f.dbl) * (1 - f.crit) +
-       (f.dbl * 2) * (1 - f.crit) +
-       (1 - f.dbl) * f.crit * f.critDmg +
-       f.dbl * 2 * f.crit * f.critDmg);
-
-  return expectedHit * f.hits * (1 + f.aspd);
+function getDamageByHit(user) {
+  const critDamage = (user.power * user.critDmg * user.critRate) + (user.power * (1 - user.critRate));
+  const dbDamegeRate = (2 * user.dbAttackRate) + (1 * (1 - user.dbAttackRate));
+  const damage = critDamage * dbDamegeRate;
+  return damage;
 }
 
-function fightTTD(defender, attacker) {
-  const atkDPS = damagePerSecond(attacker) * (1 - defender.block);
-  const rawDPS = damagePerSecond(defender) * defender.drain;
+function battleSimulation(defender, attacker) {
+  const damge = getDamageByHit(attacker) * (1 - defender.block);
+  const drain = getDamageByHit(defender) * defender.drain;
 
   let hp = defender.hpMax;
   let t = 0;
-  const dt = 0.1;
+  const dt = 1;
 
   const timeline = [];
+  const hitBySec = parseFloat((1 / (attacker.hits * (1 + attacker.attackSpeed))).toFixed(1)) * 10;
+  let hitTimer = hitBySec;
 
-  while (hp > 0 && t < 60) {
-    const heal = defender.hp0 * defender.regen + (t >= defender.delay ? rawDPS : 0);
-    const taken = t >= attacker.delay ? atkDPS : 0;
-    const net = taken - heal;
+  const drainBySec = parseFloat((1 / (defender.hits * (1 + defender.attackSpeed))).toFixed(1)) * 10;
+  let drainTimer = drainBySec;
 
-    if (net > 0) hp -= net * dt;
+  const healPerSec = hp * defender.regen;
 
-    timeline.push([t.toFixed(1), hp]);
+  while (hp > 0 && t < 600) {
+    // attacker의 히트 타이밍에 맞춰 데미지 적용
+    if (t === hitTimer) {
+      hp -= damge;
+      hitTimer += hitBySec;
+    }
+
+    // 체젠은 0.1초 단위로 계산
+    let heal = (defender.hp0 * defender.regen)/10;
+
+    // defender의 드레인 타이밍에 맞춰 흡혈 적용
+    if (t === drainTimer) {
+      heal += drain;
+      drainTimer += drainBySec;
+    }
+
+    hp += heal;
+
+    timeline.push([(t/10).toFixed(1), hp]);
 
     t += dt;
   }
 
-  return { time: hp > 0 ? Infinity : t, log: timeline, hp };
+  return { time: hp > 0 ? Infinity : ((t-1)/10), log: timeline, hp };
 }
 
 /* -----------------------------------------------------------
    Simulation Runner
 ----------------------------------------------------------- */
 function startBattle() {
-  const A = loadFighter("a");
-  const B = loadFighter("b");
+  const A = loadFighter('a');
+  const B = loadFighter('b');
 
-  const A_TTD = fightTTD(A, B);
-  const B_TTD = fightTTD(B, A);
+  const A_TTD = battleSimulation(A, B);
+  const B_TTD = battleSimulation(B, A);
 
-  const out = document.getElementById("battleResult");
+  const out = document.getElementById('battleResult');
 
   let msg = `
-    내가 쓰러진 시간: ${A_TTD.time.toFixed(2)}s<br>
-    적이 쓰러진 시간: ${B_TTD.time.toFixed(2)}s<br><br>
+    내가 쓰러진 시간: ${A_TTD.time.toFixed(1)}s<br>
+    적이 쓰러진 시간: ${B_TTD.time.toFixed(1)}s<br><br>
   `;
 
   if (A_TTD.time === Infinity && B_TTD.time === Infinity) {
     msg = `
-        나의 남은 체력: ${A_TTD.hp.toFixed(2)}<br>
-        적의 남은 체력: ${B_TTD.hp.toFixed(2)}<br><br>
+        나의 남은 체력: ${pretty(A_TTD.hp)}<br>
+        적의 남은 체력: ${pretty(B_TTD.hp)}<br><br>
     `;
 
     if (A_TTD.hp > B_TTD.hp)
-      msg += "🥇 승리";
+      msg += '🥇 승리';
     else if (B_TTD.hp > A_TTD.hp)
-      msg += "☠️ 패배";
+      msg += '☠️ 패배';
     else
-    msg += "🤝 무승부";
+    msg += '🤝 무승부';
   } else if (A_TTD.time > B_TTD.time)
-    msg += "🥇 승리";
+    msg += '🥇 승리';
   else if (B_TTD.time > A_TTD.time)
-    msg += "☠️ 패배";
+    msg += '☠️ 패배';
   else
-    msg += "🤝 무승부";
+    msg += '🤝 무승부';
 
   out.innerHTML = msg;
 
@@ -340,8 +354,8 @@ function startBattle() {
    Debug timeline table
 ----------------------------------------------------------- */
 function logTimeline(logA, logB, delayA, delayB) {
-  const tb = document.querySelector("#logTable tbody");
-  tb.innerHTML = "";
+  const tb = document.querySelector('#logTable tbody');
+  tb.innerHTML = '';
 
   const len = Math.max(logA.length, logB.length);
 
@@ -350,15 +364,18 @@ function logTimeline(logA, logB, delayA, delayB) {
     const b = logB[i] || [];
     const t = a[0] || b[0];
 
-    const row = document.createElement("tr");
+    const row = document.createElement('tr');
 
     const isAStart = +t === +delayA;
     const isBStart = +t === +delayB;
 
+    if (a[1] <= 0) a[1] = 0;
+    if (b[1] <= 0) b[1] = 0;
+
     row.innerHTML = `
       <td>${t}</td>
-      <td class="${isAStart ? "highlight" : ""}">${a[1] ? pretty(+a[1]) : ""}</td>
-      <td class="${isBStart ? "highlight" : ""}">${b[1] ? pretty(+b[1]) : ""}</td>
+      <td class='${isAStart ? 'highlight' : ''}'>${a[1] ? pretty(+a[1]) : '☠️'}</td>
+      <td class='${isBStart ? 'highlight' : ''}'>${b[1] ? pretty(+b[1]) : '☠️'}</td>
     `;
 
     tb.appendChild(row);
