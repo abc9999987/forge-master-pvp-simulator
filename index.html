@@ -725,6 +725,8 @@ function battleSimulation(defender, attacker, attackerSkillName) {
 
     hp += heal;
 
+    if (hp > hpMax) hp = hpMax;
+
     // 공격자 Skill 처리
     if (attackerSkills !== null) {
       for (const atkSkill of attackerSkills) {
