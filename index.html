@@ -272,10 +272,32 @@ function createInputs(container, prefix) {
 
     const input = row.querySelector('input');
     input.addEventListener('input', () => {
-      if (['doubleproc', 'critproc'].includes(key)) {
-        if (input.value > 100) input.value = 100;
+      // 숫자가 아닌 값 제거
+      if (input.value !== '' && isNaN(input.value)) {
+        input.value = '';
+        return;
       }
-      if (input.value < 0) input.value = 0;
+      
+      // 빈 값은 허용
+      if (input.value === '') input.value = 0;
+      
+      const numValue = parseFloat(input.value);
+      if (['doubleproc', 'critproc'].includes(key)) {
+        if (numValue > 100) input.value = 100;
+      }
+
+      if (key === 'reduceCooltime' && numValue > 80) input.value = 80;
+      if (numValue < 0) input.value = 0;
+    });
+    
+    // paste 이벤트에서도 검증
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+      if (!isNaN(pastedText) && pastedText !== '') {
+        input.value = pastedText;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     });
 
     container.appendChild(row);
@@ -589,8 +611,8 @@ const SKILL_DATA = {
   '벌레': { name: '벌레', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
   '번개': { name: '번개', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
   // 신화
-  '기총소사': { name: '기총소사', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
-  '드론': { name: '드론', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '기총소사': { name: '기총소사', isBuff: false, damage: 4860000, hit: 3, cooltime: 5, defaultCooltime: 10 }, // 제보자: S2_한쪽팔없음/Armless (2렙 기준)
+  '드론': { name: '드론', isBuff: false, damage: 1210000, hit: 8, cooltime: 5, defaultCooltime: 10 }, // 제보자: S2_한쪽팔없음/Armless (2렙 기준)
   '높은 사기': { name: '높은 사기', isBuff: true, damage: 0, hit: 0, addAtk: 2000000, addHP: 16000000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 8 }
 };
 
