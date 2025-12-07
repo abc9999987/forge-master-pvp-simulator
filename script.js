@@ -457,12 +457,11 @@ function battleSimulation(defender, attacker, attackerSkillName) {
 
   const timeline = [];
   const hitBySec = parseFloat((1 / (attacker.hits * (1 + attacker.attackSpeed))).toFixed(1)) * 10;
-  let hitTimer = hitBySec;
+  let hitTimer = hitBySec + attacker.delay * 10;
 
   const drainBySec = parseFloat((1 / (defender.hits * (1 + defender.attackSpeed))).toFixed(1)) * 10;
-  let drainTimer = drainBySec;
+  let drainTimer = drainBySec + defender.delay * 10;
 
-  const healPerSec = hp * defender.regen;
   const prefix = attackerSkillName === 'mySkills' ? 'b' : 'a';
   const defenderHpMult = num(prefix + '_hpmult') / 100;
 
