@@ -132,6 +132,39 @@
         font-weight: 700;
         color: #ff6b5a;
     }
+    /* Skill selectors */
+    .skill-panel {
+      background: white;
+      padding: 16px;
+      margin-bottom: 18px;
+      border-radius: 14px;
+      width: 760px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border: 2px solid #ffecec;
+    }
+
+    .skill-area {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .skill-column {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .skill-select {
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1.5px solid #ffd6d0;
+      background: #fffaf9;
+      font-size: 14px;
+    }
+
     </style>
 </head>
 
@@ -148,6 +181,21 @@
     <div class='panel' id='blockB'>
       <h3>적</h3>
       <div class='groupB'></div>
+    </div>
+  </div>
+
+  <div class='skill-panel' id='skillPanel'>
+    <h3 style='margin:0 0 10px 0;'>스킬 선택</h3>
+    <div class='skill-area'>
+      <div class='skill-column' id='mySkills'>
+        <label>내 스킬</label>
+        <!-- 3 left selects inserted by JS -->
+      </div>
+
+      <div class='skill-column' id='enemySkills'>
+        <label>적 스킬</label>
+        <!-- 3 right selects inserted by JS -->
+      </div>
     </div>
   </div>
 
@@ -223,6 +271,44 @@ document.getElementById('b_power').value = 100;
 document.getElementById('b_hitrate').value = 1;
 document.getElementById('b_vital').value = 1000;
 document.getElementById('b_hpmult').value = 500;
+
+/* -----------------------------------------------------------
+   Skill selector: dynamic options and UI
+----------------------------------------------------------- */
+const SKILL_OPTIONS = ['기본 공격', '스킬 A', '스킬 B'];
+
+function createSelect(idPrefix) {
+  const sel = document.createElement('select');
+  sel.className = 'skill-select';
+  sel.id = idPrefix;
+  SKILL_OPTIONS.forEach(opt => {
+    const o = document.createElement('option');
+    o.value = opt;
+    o.textContent = opt;
+    sel.appendChild(o);
+  });
+  return sel;
+}
+
+function renderSkillSelectors() {
+  const left = document.getElementById('mySkills');
+  const right = document.getElementById('enemySkills');
+
+  // clear any existing selects (but keep label)
+  [...left.querySelectorAll('select')].forEach(n => n.remove());
+  [...right.querySelectorAll('select')].forEach(n => n.remove());
+
+  for (let i = 1; i <= 3; i++) {
+    const sL = createSelect('left_skill_' + i);
+    left.appendChild(sL);
+
+    const sR = createSelect('right_skill_' + i);
+    right.appendChild(sR);
+  }
+}
+
+// initial render
+renderSkillSelectors();
 
 /* -----------------------------------------------------------
    Helper
