@@ -190,11 +190,17 @@
     <div class='panel' id='blockA'>
       <h3>나</h3>
       <div class='groupA'></div>
+      <div style="margin-top:8px; text-align:right;">
+        <button id="resetA" type="button" style="background:#fff;border:1px solid #ffd6d0;color:#ff6b5a;padding:6px 10px;border-radius:10px;cursor:pointer;">리셋</button>
+      </div>
     </div>
 
     <div class='panel' id='blockB'>
       <h3>적</h3>
       <div class='groupB'></div>
+      <div style="margin-top:8px; text-align:right;">
+        <button id="resetB" type="button" style="background:#fff;border:1px solid #ffd6d0;color:#ff6b5a;padding:6px 10px;border-radius:10px;cursor:pointer;">리셋</button>
+      </div>
     </div>
   </div>
 
@@ -250,7 +256,10 @@ const STAT_FIELDS = [
   ['guard', '블록 확률(%)'],
   ['vital', '총 체력'],
   ['hpmult', 'PVP 체력 보정(%)'],
-  ['startup', '근접 딜레이(초)']
+  ['startup', '근접 딜레이(초)'],
+  ['skillbonus', '스킬 피해(%)'],
+  ['damagebonus', '피해(%)'],
+  ['reduceCooltime', '스킬 재사용 대기시간(%)'],
 ];
 
 function createInputs(container, prefix) {
@@ -276,15 +285,92 @@ function createInputs(container, prefix) {
 createInputs(document.querySelector('.groupA'), 'a');
 createInputs(document.querySelector('.groupB'), 'b');
 
-document.getElementById('a_power').value = 100;
-document.getElementById('a_hitrate').value = 1;
-document.getElementById('a_vital').value = 1000;
-document.getElementById('a_hpmult').value = 500;
+// Default input values (centralized) — 쉽게 변경/리셋 가능하도록 정의
+const DEFAULT_INPUTS = {
+  a: {
+    power: 100, hitrate: 1, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
+    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 500, startup: 0,
+    skillbonus: 0, damagebonus: 0, reduceCooltime: 0
+  },
+  b: {
+    power: 100, hitrate: 1, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
+    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 500, startup: 0,
+    skillbonus: 0, damagebonus: 0, reduceCooltime: 0
+  }
+};
 
-document.getElementById('b_power').value = 100;
-document.getElementById('b_hitrate').value = 1;
-document.getElementById('b_vital').value = 1000;
-document.getElementById('b_hpmult').value = 500;
+function applyDefaults(prefix) {
+  const defs = DEFAULT_INPUTS[prefix] || {};
+  STAT_FIELDS.forEach(([key]) => {
+    const el = document.getElementById(prefix + '_' + key);
+    if (!el) return;
+    el.value = (defs.hasOwnProperty(key) ? defs[key] : 0);
+  });
+  // clear selects
+  const containerId = prefix === 'a' ? 'mySkills' : 'enemySkills';
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.querySelectorAll('select').forEach(s => s.value = '');
+    updateExclusiveForContainer(container);
+    updateAllSkillIcons(container);
+  }
+}
+
+// Load saved values if present, otherwise apply defaults
+function loadInputs(prefix) {
+  const key = 'fmpsim_' + prefix;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) { applyDefaults(prefix); return; }
+    const obj = JSON.parse(raw);
+    STAT_FIELDS.forEach(([field]) => {
+      const el = document.getElementById(prefix + '_' + field);
+      if (!el) return;
+      if (obj.hasOwnProperty(field)) el.value = obj[field];
+      else el.value = 0;
+    });
+    // restore selects
+    const selNames = obj.selectedSkills || [];
+    const containerId = prefix === 'a' ? 'mySkills' : 'enemySkills';
+    const container = document.getElementById(containerId);
+    if (container) {
+      const selects = Array.from(container.querySelectorAll('select'));
+      for (let i = 0; i < selects.length; i++) {
+        selects[i].value = selNames[i] || '';
+      }
+      updateExclusiveForContainer(container);
+      updateAllSkillIcons(container);
+    }
+  } catch (e) {
+    console.warn('loadInputs parse error', e);
+    applyDefaults(prefix);
+  }
+}
+
+function saveInputs(prefix) {
+  const obj = {};
+  STAT_FIELDS.forEach(([field]) => {
+    const el = document.getElementById(prefix + '_' + field);
+    obj[field] = el ? el.value : 0;
+  });
+  // save selected skills
+  const containerId = prefix === 'a' ? 'mySkills' : 'enemySkills';
+  const container = document.getElementById(containerId);
+  obj.selectedSkills = [];
+  if (container) {
+    container.querySelectorAll('select').forEach(s => obj.selectedSkills.push(s.value || ''));
+  }
+  localStorage.setItem('fmpsim_' + prefix, JSON.stringify(obj));
+}
+
+function resetInputs(prefix) {
+  applyDefaults(prefix);
+  localStorage.removeItem('fmpsim_' + prefix);
+}
+
+// Apply load on startup
+loadInputs('a');
+loadInputs('b');
 
 /* -----------------------------------------------------------
    Skill selector: dynamic options and UI
@@ -301,7 +387,12 @@ const SKILL_NAME = [
 // 관리자가 특정 상황에서 드롭다운에서 선택을 금지하고 싶은 스킬을
 // 이 배열에 추가하면 해당 스킬은 모든 셀렉트에서 비활성화됩니다.
 // 예: const IGNORE_SKILLS = ['고기', '드론'];
-const IGNORE_SKILLS = ['고기', '광전사', '버프', '사기', '높은 사기'];
+const IGNORE_SKILLS = [
+  '사기', '높은 사기',
+  '운석', '사기',
+  '쇄도', '벌레', '번개',
+  '기총소사', '드론', '높은 사기'
+];
 
 function createSelect(idPrefix) {
   const wrapper = document.createElement('div');
@@ -431,6 +522,106 @@ renderSkillSelectors();
   updateAllSkillIcons(left);
   updateAllSkillIcons(right);
 
+// Log rendering helpers: convert skill name arrays into small icon HTML
+function skillIconsHTML(skillNames = [], buffSkillUsed = [], size = 48) {
+  const newArray = [];
+  if (skillNames.length > 0) {
+    newArray.push(...skillNames);
+  }
+
+  if (buffSkillUsed.length > 0) {
+    newArray.push(...buffSkillUsed);
+  }
+
+  if (newArray.length === 0) return '';
+
+  // skill sprite sheet uses 48x48 per icon; we will scale down to `size`
+  const SLICE_H = 48;
+  const SHEET_H = 864;
+  const icons = newArray.map(name => {
+    const idx = SKILL_NAME.indexOf(name);
+    if (idx === -1 || idx * SLICE_H >= SHEET_H) return '';
+    const posY = -(idx * SLICE_H);
+    // inline style to avoid adding many CSS classes
+    const style = [
+      `display:inline-block`,
+      `width:${size}px`,
+      `height:${size}px`,
+      `background-image:url('skills.png')`,
+      `background-repeat:no-repeat`,
+      `background-size:48px ${SHEET_H}px`,
+      `background-position:0px ${posY}px`,
+      `margin-right:6px`,
+      `vertical-align:middle`
+    ].join(';');
+    return `<span title="${escapeHtml(name)}" style="${style}"></span>`;
+  });
+  return icons.join('');
+}
+
+function escapeHtml(str) {
+  return (str + '').replace(/[&<>"]+/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+}
+
+/* -----------------------------------------------------------
+   Skill data registry (metadata for each SKILL_OPTIONS entry)
+   - 각 스킬 이름(key)은 SKILL_OPTIONS 배열의 값과 정확히 일치해야 합니다.
+----------------------------------------------------------- */
+// 모든 Skill은 전투 시작 시 5초의 cooltime이 적용됨.
+const SKILL_DATA = {
+  // 일반
+  '외침': { name: '외침', isBuff: false, damage: 22, hit: 6, cooltime: 5, defaultCooltime: 10 },
+  '화살': { name: '화살', isBuff: false, damage: 78, hit: 3, cooltime: 5, defaultCooltime: 10 },
+  '고기': { name: '고기', isBuff: true, damage: 0, hit: 0, addAtk: 0, addHP: 118, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
+  // 희귀
+  '수리검': { name: '수리검', isBuff: false, damage: 316, hit: 5, cooltime: 5, defaultCooltime: 10 },
+  '포격': { name: '포격', isBuff: false, damage: 527, hit: 3, cooltime: 5, defaultCooltime: 10 },
+  '광전사': { name: '광전사', isBuff: true, damage: 0, hit: 0, addAtk: 1560, addHP: 0, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
+  // 서사시
+  '가시': { name: '가시', isBuff: false, damage: 24800, hit: 2, cooltime: 5, defaultCooltime: 6 },
+  '화살비': { name: '화살비', isBuff: false, damage: 218000, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '버프': { name: '버프', isBuff: true, damage: 0, hit: 0, addAtk: 12000, addHP: 96000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
+  // 전설
+  '운석': { name: '운석', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '폭탄': { name: '폭탄', isBuff: false, damage: 336000, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '사기': { name: '사기', isBuff: true, damage: 0, hit: 0, addAtk: 0, addHP: 0, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 },
+  // 궁극
+  '쇄도': { name: '쇄도', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '벌레': { name: '벌레', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '번개': { name: '번개', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  // 신화
+  '기총소사': { name: '기총소사', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '드론': { name: '드론', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '높은 사기': { name: '높은 사기', isBuff: true, damage: 0, hit: 0, addAtk: 0, addHP: 0, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 9 }
+};
+
+// 기본값 반환. SKILL_DATA에 정의되지 않은 스킬을 안전하게 처리하기 위함.
+function getSkillData(name) {
+  return SKILL_DATA[name] || null;
+}
+
+// prefix: 'a' (내 스킬) 또는 'b' (적 스킬)
+function getSelectedSkillNames(prefix) {
+  const containerId = prefix === 'mySkills' ? 'mySkills' : 'enemySkills';
+  const container = document.getElementById(containerId);
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('select')).map(s => s.value).filter(Boolean);
+}
+
+// 선택된 스킬 이름 배열을 SKILL_DATA 객체로 변환한 배열 반환
+function getSelectedSkillObjects(prefix) {
+  return getSelectedSkillNames(prefix).map(name => getSkillData(name));
+}
+
+// wire up reset buttons
+document.getElementById('resetA').addEventListener('click', () => {
+  resetInputs('a');
+});
+
+document.getElementById('resetB').addEventListener('click', () => {
+  resetInputs('b');
+});
+
 /* -----------------------------------------------------------
    Helper
 ----------------------------------------------------------- */
@@ -462,7 +653,10 @@ function loadFighter(prefix) {
     block: num(prefix + '_guard') / 100,
     hp0: num(prefix + '_vital'),
     hpMax: maxHP,
-    delay: num(prefix + '_startup')
+    delay: num(prefix + '_startup'),
+    skillDmgBonus: num(prefix + '_skillbonus') / 100,
+    damageBonus: num(prefix + '_damagebonus') / 100,
+    skillReduceCooltime: num(prefix + '_reduceCooltime') / 100,
   };
 }
 
@@ -473,10 +667,12 @@ function getDamageByHit(user) {
   return damage;
 }
 
-function battleSimulation(defender, attacker) {
-  const damge = getDamageByHit(attacker) * (1 - defender.block);
-  const drain = getDamageByHit(defender) * defender.drain;
+function battleSimulation(defender, attacker, attackerSkillName) {
+  const attackerSkills = getSelectedSkillObjects(attackerSkillName);
+  const defenderSkillName = attackerSkillName === 'mySkills' ? 'enemySkills' : 'mySkills';
+  const defenderSkill = getSelectedSkillObjects(defenderSkillName);
 
+  let hpMax = defender.hpMax;
   let hp = defender.hpMax;
   let t = 0;
   const dt = 1;
@@ -489,28 +685,93 @@ function battleSimulation(defender, attacker) {
   let drainTimer = drainBySec;
 
   const healPerSec = hp * defender.regen;
+  const prefix = attackerSkillName === 'mySkills' ? 'b' : 'a';
+  const defenderHpMult = num(prefix + '_hpmult') / 100;
 
   while (hp > 0 && t < 600) {
-    // attacker의 히트 타이밍에 맞춰 데미지 적용
-    if (t === hitTimer) {
-      hp -= damge;
-      hitTimer += hitBySec;
+    let skillUsed = [];
+    let buffSkillUsed = [];
+
+    // 방어자 Skill 처리
+    if (defenderSkill !== null) {
+      for (const defSkill of defenderSkill) {
+        if (defSkill.bufftime !== 0 && t === defSkill.bufftime * 10) {
+          // 버프 지속 시간 종료 시 체력의 비율 만큼 원래 상태로 복원
+          hp = defender.hpMax * (hp / hpMax);
+          hpMax = defender.hpMax * defenderHpMult;
+          // 버프의 경우 지속 시간 종료 시점에 cooltime 시작됨.
+          defSkill.cooltime = defSkill.bufftime + defSkill.defaultCooltime * (1 - defender.skillReduceCooltime);
+        }
+
+        if (t === defSkill.cooltime * 10) {
+          if (defSkill.isBuff === true) {
+            // 버프 스킬 처리 로직 (예: 공격력 증가, 체력 증가 등)
+            hp += (defSkill.addHP * defenderHpMult);
+            hpMax = defender.hpMax + (defSkill.addHP * defenderHpMult);
+            defSkill.bufftime = t/10 + defSkill.defaultBufftime;
+          }
+        }
+      }
     }
 
     // 체젠은 0.1초 단위로 계산
-    let heal = (defender.hp0 * defender.regen)/10;
+    let heal = (hpMax * defender.regen)/10;
 
     // defender의 드레인 타이밍에 맞춰 흡혈 적용
     if (t === drainTimer) {
+      const drain = getDamageByHit(defender) * defender.drain;
       heal += drain;
       drainTimer += drainBySec;
     }
 
     hp += heal;
 
-    timeline.push([(t/10).toFixed(1), hp]);
+    // 공격자 Skill 처리
+    if (attackerSkills !== null) {
+      for (const atkSkill of attackerSkills) {
+        if (atkSkill.bufftime !== 0 && t === atkSkill.bufftime * 10) {
+          // 버프 지속 시간 종료 시 원래 상태로 복원
+          attacker.power -= atkSkill.addAtk;
+          // 버프의 경우 지속 시간 종료 시점에 cooltime 시작됨.
+          atkSkill.cooltime = atkSkill.bufftime + atkSkill.defaultCooltime * (1 - attacker.skillReduceCooltime);
+        }
 
+        if (t === atkSkill.cooltime * 10) {
+          if (atkSkill.isBuff === true) {
+            // 버프 스킬 처리 로직 (예: 공격력 증가, 체력 증가 등)
+            attacker.power += atkSkill.addAtk;
+            atkSkill.bufftime = t/10 + atkSkill.defaultBufftime;
+            buffSkillUsed.push(atkSkill.name);
+          } else {
+            // 공격 스킬 처리 로직
+            hp -= atkSkill.damage * atkSkill.hit * (1 + attacker.skillDmgBonus) * (1 + attacker.damageBonus) * (1 - defender.block);
+            atkSkill.cooltime += atkSkill.defaultCooltime * (1 - attacker.skillReduceCooltime);
+            skillUsed.push(atkSkill.name);
+          }
+        }
+      }
+    }
+    // attacker의 히트 타이밍에 맞춰 데미지 적용
+    if (t === hitTimer) {
+      const damage = getDamageByHit(attacker) * (1 - defender.block);
+      if (attackerSkillName === 'mySkills') {
+        console.log(t, '데미지: ', damage, '현재 체력: ', hp, '남은 체력: ', hp - damage);
+      }
+      hp -= damage;
+      hitTimer += hitBySec;
+    }
+
+    timeline.push([(t/10).toFixed(1), hp, skillUsed, buffSkillUsed]);
     t += dt;
+  }
+
+  // 전투 종료 후 모든 스킬의 쿨타임 초기화
+  for (const skill of defenderSkill) {
+    skill.cooltime = 5;
+  }
+
+  for (const skill of attackerSkills) {
+    skill.cooltime = 5;
   }
 
   return { time: hp > 0 ? Infinity : ((t-1)/10), log: timeline, hp };
@@ -520,11 +781,15 @@ function battleSimulation(defender, attacker) {
    Simulation Runner
 ----------------------------------------------------------- */
 function startBattle() {
-  const A = loadFighter('a');
-  const B = loadFighter('b');
+  // cache current inputs to localStorage so user's data persists
+  saveInputs('a');
+  saveInputs('b');
 
-  const A_TTD = battleSimulation(A, B);
-  const B_TTD = battleSimulation(B, A);
+  const me = loadFighter('a');
+  const enemy = loadFighter('b');
+
+  const A_TTD = battleSimulation(me, enemy, 'enemySkills');
+  const B_TTD = battleSimulation(enemy, me, 'mySkills');
 
   const out = document.getElementById('battleResult');
 
@@ -554,7 +819,7 @@ function startBattle() {
 
   out.innerHTML = msg;
 
-  logTimeline(A_TTD.log, B_TTD.log, A.delay, B.delay);
+  logTimeline(A_TTD.log, B_TTD.log, me.delay, enemy.delay);
 }
 
 /* -----------------------------------------------------------
@@ -578,11 +843,14 @@ function logTimeline(logA, logB, delayA, delayB) {
 
     if (a[1] <= 0) a[1] = 0;
     if (b[1] <= 0) b[1] = 0;
+    // convert used-skill name arrays (a[2], b[2]) into icon HTML
+    const bSkillsHTML = skillIconsHTML(a[2], a[3]);
+    const aSkillsHTML = skillIconsHTML(b[2], b[3]);
 
     row.innerHTML = `
       <td>${t}</td>
-      <td class='${isAStart ? 'highlight' : ''}'>${a[1] ? pretty(+a[1]) : '☠️'}</td>
-      <td class='${isBStart ? 'highlight' : ''}'>${b[1] ? pretty(+b[1]) : '☠️'}</td>
+      <td class='${isAStart ? 'highlight' : ''}'>${a[1] ? pretty(+a[1]) : '☠️'}<div style="margin-top:6px">${aSkillsHTML}</div></td>
+      <td class='${isBStart ? 'highlight' : ''}'>${b[1] ? pretty(+b[1]) : '☠️'}<div style="margin-top:6px">${bSkillsHTML}</div></td>
     `;
 
     tb.appendChild(row);
