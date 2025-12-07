@@ -697,7 +697,7 @@ function battleSimulation(defender, attacker, attackerSkillName) {
         if (defSkill.bufftime !== 0 && t === defSkill.bufftime * 10) {
           // 버프 지속 시간 종료 시 체력의 비율 만큼 원래 상태로 복원
           hp = defender.hpMax * (hp / hpMax);
-          hpMax = defender.hpMax * defenderHpMult;
+          hpMax = defender.hpMax;
           // 버프의 경우 지속 시간 종료 시점에 cooltime 시작됨.
           defSkill.cooltime = defSkill.bufftime + defSkill.defaultCooltime * (1 - defender.skillReduceCooltime);
         }
