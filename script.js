@@ -69,12 +69,12 @@ createInputs(document.querySelector('.groupB'), 'b');
 const DEFAULT_INPUTS = {
   a: {
     power: 100, hitrate: 1.7, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
-    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 300, startup: 0,
+    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 500, startup: 0,
     skillbonus: 0, damagebonus: 0, reduceCooltime: 0
   },
   b: {
     power: 100, hitrate: 1.7, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
-    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 300, startup: 0,
+    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 500, startup: 0,
     skillbonus: 0, damagebonus: 0, reduceCooltime: 0
   }
 };
@@ -591,19 +591,19 @@ function calculateBattle(t, me, enemy, skills, myBattleData) {
     }
 
     // 체젠은 0.1초 단위로 계산, 체뻥은 적용하지 않음.
-    let heal = (me.hpMax * me.regen)/10;
+    let heal = (me.hp0 * me.regen)/10;
 
     // 내 Hit 타이밍에 맞춰 데미지 / 흡혈 적용
     if (t === hitTimer) {
       const getDamage = getDamageByHit(me.current, enemy.block);
       const drain = getDamage * me.drain;
-      heal += drain*0.33;
+      heal += drain;
 
       damage += getDamage;
       hitTimer += hitBySec;
     }
 
-    // Issue. 체력 회복에 보정값이 있는 듯 함. /2.3 로 가정.
+    // Issue. 체력 회복에 보정값이 있는 듯 함. /2 로 가정.
     return { damage, heal: heal, skillUsed, buffSkillUsed, me, hitTimer };
 }
 
