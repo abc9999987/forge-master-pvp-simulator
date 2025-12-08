@@ -603,40 +603,88 @@ function startBattle() {
   saveInputs('a');
   saveInputs('b');
 
-  let me = loadFighter('a');
-  let enemy = loadFighter('b');
-  const battleResult = battleSimulation2(me, enemy);
+  const simResults = [];
+  const NUM_RUNS = 10;
+
+  // Run 10 simulations and collect results
+  for (let run = 1; run <= NUM_RUNS; run++) {
+    let me = loadFighter('a');
+    let enemy = loadFighter('b');
+    const battleResult = battleSimulation2(me, enemy);
+    simResults.push({
+      run,
+      result: battleResult
+    });
+  }
+
+  // Display summary statistics
   const out = document.getElementById('battleResult');
+  let wins = 0, losses = 0, draws = 0;
 
+  simResults.forEach(sr => {
+    const br = sr.result;
+    if (br.myEndTime === 0) wins++;
+    else if (br.enemyEndTime === 0) losses++;
+    else draws++;
+  });
+
+  const winRate = ((wins / NUM_RUNS) * 100).toFixed(1);
   let msg = `
-    내가 쓰러진 시간: ${battleResult.myEndTime === 0 ? '쓰러지지 않았다!' : battleResult.myEndTime + 's'}<br>
-    적이 쓰러진 시간: ${battleResult.enemyEndTime === 0 ? '쓰러지지 않았다!' : battleResult.enemyEndTime + 's'}<br><br>
+    10회 시뮬레이션 결과<br>
+    승리: ${wins}회 | 패배: ${losses}회 | 무승부: ${draws}회 | 승률: ${winRate}%
   `;
-
-  if (battleResult.time === Infinity) {
-    msg = `
-        나의 남은 체력: ${pretty(battleResult.myEndHp)}<br>
-        적의 남은 체력: ${pretty(battleResult.enemyEndHp)}<br><br>
-    `;
-
-    if (battleResult.myEndHp > battleResult.enemyEndHp)
-      msg += '🥇 승리';
-    else if (battleResult.enemyEndHp > battleResult.myEndHp)
-      msg += '☠️ 패배';
-    else
-    msg += '🤝 무승부';
-  } else if (battleResult.myEndTime === 0)
-    msg += '🥇 승리';
-  else if (battleResult.enemyEndTime === 0)
-    msg += '☠️ 패배';
-  else
-    msg += '🤝 무승부';
-
   out.innerHTML = msg;
 
-  me = loadFighter('a');
-  enemy = loadFighter('b');
-  logTimeline2(battleResult.log);
+  // Display results table
+  renderSimulationResults(simResults);
+
+  // Display last run's timeline
+  logTimeline2(simResults[NUM_RUNS - 1].result.log);
+}
+
+function renderSimulationResults(simResults) {
+  const wrapper = document.getElementById('resultsTableWrapper');
+  if (!wrapper) return;
+
+  let tableHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#ffe6e2;">
+          <th style="padding:10px;border:1px solid #ffc5bc;">#</th>
+          <th style="padding:10px;border:1px solid #ffc5bc;">결과</th>
+          <th style="padding:10px;border:1px solid #ffc5bc;">나 쓰러진 시간</th>
+          <th style="padding:10px;border:1px solid #ffc5bc;">적 쓰러진 시간</th>
+          <th style="padding:10px;border:1px solid #ffc5bc;">나 남은 체력</th>
+          <th style="padding:10px;border:1px solid #ffc5bc;">적 남은 체력</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  simResults.forEach(sr => {
+    const br = sr.result;
+    let winner = '무승부';
+    if (br.myEndTime === 0) winner = '승리';
+    else if (br.enemyEndTime === 0) winner = '패배';
+
+    tableHTML += `
+      <tr style="border:1px solid #f5d2cc;text-align:center;">
+        <td style="padding:8px;border:1px solid #f5d2cc;">${sr.run}</td>
+        <td style="padding:8px;border:1px solid #f5d2cc;${winner === '승리' ? 'color:#4CAF50;font-weight:bold;' : winner === '패배' ? 'color:#f44336;font-weight:bold;' : 'color:#666;'}">${winner}</td>
+        <td style="padding:8px;border:1px solid #f5d2cc;">${br.myEndTime === 0 ? '쓰러지지 않았다!' : br.myEndTime + 's'}</td>
+        <td style="padding:8px;border:1px solid #f5d2cc;">${br.enemyEndTime === 0 ? '쓰러지지 않았다!' : br.enemyEndTime + 's'}</td>
+        <td style="padding:8px;border:1px solid #f5d2cc;">${br.myEndHp < 0 ? 0 : pretty(br.myEndHp)}</td>
+        <td style="padding:8px;border:1px solid #f5d2cc;">${br.enemyEndHp < 0 ? 0 : pretty(br.enemyEndHp)}</td>
+      </tr>
+    `;
+  });
+
+  tableHTML += `
+      </tbody>
+    </table>
+  `;
+
+  wrapper.innerHTML = tableHTML;
 }
 
 /* -----------------------------------------------------------
