@@ -67,12 +67,12 @@ createInputs(document.querySelector('.groupB'), 'b');
 // Default input values (centralized) — 쉽게 변경/리셋 가능하도록 정의
 const DEFAULT_INPUTS = {
   a: {
-    power: 100, hitrate: 1, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
+    power: 100, hitrate: 1.7, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
     drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 500, startup: 0,
     skillbonus: 0, damagebonus: 0, reduceCooltime: 0
   },
   b: {
-    power: 100, hitrate: 1, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
+    power: 100, hitrate: 1.7, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
     drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 500, startup: 0,
     skillbonus: 0, damagebonus: 0, reduceCooltime: 0
   }
@@ -456,10 +456,10 @@ function battleSimulation(defender, attacker, attackerSkillName) {
   const dt = 1;
 
   const timeline = [];
-  const hitBySec = parseFloat((1 / (attacker.hits * (1 + attacker.attackSpeed))).toFixed(1)) * 10;
+  const hitBySec = parseFloat(((attacker.hits * (1 / attacker.attackSpeed))).toFixed(1)) * 10;
   let hitTimer = hitBySec + attacker.delay * 10;
 
-  const drainBySec = parseFloat((1 / (defender.hits * (1 + defender.attackSpeed))).toFixed(1)) * 10;
+  const drainBySec = parseFloat(((defender.hits * (1 / defender.attackSpeed))).toFixed(1)) * 10;
   let drainTimer = drainBySec + defender.delay * 10;
 
   const prefix = attackerSkillName === 'mySkills' ? 'b' : 'a';
@@ -495,7 +495,7 @@ function battleSimulation(defender, attacker, attackerSkillName) {
     }
 
     // 체젠은 0.1초 단위로 계산
-    let heal = (hpMax * defender.regen)/10;
+    let heal = (defender.hpMax * defender.regen)/10;
 
     // defender의 드레인 타이밍에 맞춰 흡혈 적용
     if (t === drainTimer) {
