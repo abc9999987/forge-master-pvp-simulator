@@ -168,3 +168,34 @@ table td {
     visibility: hidden;
     flex: 0 0 48px;
 }
+
+#resultsTableWrapper table tbody tr.summary-row {
+    transition: background-color 140ms ease, transform 140ms ease;
+}
+
+#resultsTableWrapper table tbody tr.summary-row:hover {
+    background: #fff4f0;
+    transform: translateY(-1px);
+}
+
+/* Detail row header (clickable) hover */
+#resultsTableWrapper .detail-row table thead th {
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+#resultsTableWrapper .detail-row table thead th:hover {
+    background:#ffe6df;
+    color:#333;
+}
+
+/* Detail table body cells hover to indicate interactivity */
+#resultsTableWrapper .detail-row table tbody td:hover {
+    background: #fff7f3;
+}
+
+/* Make icons+labels slightly pop on hover inside detail rows */
+#resultsTableWrapper .detail-row td span[title]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
