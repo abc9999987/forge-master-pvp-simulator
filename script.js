@@ -440,9 +440,9 @@ function loadFighter(prefix) {
 }
 
 function getDamageByHit(user) {
-  const critDamage = (user.power * user.critDmg * user.critRate) + (user.power * (1 - user.critRate));
-  const dbDamegeRate = (2 * user.dbAttackRate) + (1 * (1 - user.dbAttackRate));
-  const damage = critDamage * dbDamegeRate;
+  const critRate = Math.random() <= user.critRate ? user.critDmg : 1;
+  const doubleRate = Math.random() <= user.dbAttackRate ? 2 : 1;
+  const damage = user.power * critRate * doubleRate;
   return damage;
 }
 
