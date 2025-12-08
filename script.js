@@ -635,18 +635,15 @@ function startBattle() {
   `;
   out.innerHTML = msg;
 
-  // Display results table
+  // Display results table (each 행 클릭 시 상세 로그 확장)
   renderSimulationResults(simResults);
-
-  // Display last run's timeline
-  logTimeline2(simResults[NUM_RUNS - 1].result.log);
 }
 
 function renderSimulationResults(simResults) {
   const wrapper = document.getElementById('resultsTableWrapper');
   if (!wrapper) return;
 
-  let tableHTML = `
+  let html = `
     <table style="width:100%;border-collapse:collapse;">
       <thead>
         <tr style="background:#ffe6e2;">
@@ -661,14 +658,14 @@ function renderSimulationResults(simResults) {
       <tbody>
   `;
 
-  simResults.forEach(sr => {
+  simResults.forEach((sr, idx) => {
     const br = sr.result;
     let winner = '무승부';
     if (br.myEndTime === 0) winner = '승리';
     else if (br.enemyEndTime === 0) winner = '패배';
 
-    tableHTML += `
-      <tr style="border:1px solid #f5d2cc;text-align:center;">
+    html += `
+      <tr class="summary-row" data-idx="${idx}" style="border:1px solid #f5d2cc;text-align:center;cursor:pointer;">
         <td style="padding:8px;border:1px solid #f5d2cc;">${sr.run}</td>
         <td style="padding:8px;border:1px solid #f5d2cc;${winner === '승리' ? 'color:#4CAF50;font-weight:bold;' : winner === '패배' ? 'color:#f44336;font-weight:bold;' : 'color:#666;'}">${winner}</td>
         <td style="padding:8px;border:1px solid #f5d2cc;">${br.myEndTime === 0 ? '쓰러지지 않았다!' : br.myEndTime + 's'}</td>
@@ -676,76 +673,81 @@ function renderSimulationResults(simResults) {
         <td style="padding:8px;border:1px solid #f5d2cc;">${br.myEndHp < 0 ? 0 : pretty(br.myEndHp)}</td>
         <td style="padding:8px;border:1px solid #f5d2cc;">${br.enemyEndHp < 0 ? 0 : pretty(br.enemyEndHp)}</td>
       </tr>
+      <tr class="detail-row" data-idx="${idx}" style="display:none;background:#fffaf9;">
+        <td colspan="6" style="padding:8px;border-top:0;">
+          ${buildDetailTableHTML(br.log)}
+        </td>
+      </tr>
     `;
   });
 
-  tableHTML += `
+  html += `
       </tbody>
     </table>
   `;
 
-  wrapper.innerHTML = tableHTML;
+  wrapper.innerHTML = html;
+
+  // attach click handlers to toggle detail rows
+  wrapper.querySelectorAll('.summary-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const idx = row.getAttribute('data-idx');
+      const detail = wrapper.querySelector(`.detail-row[data-idx="${idx}"]`);
+      if (!detail) return;
+      detail.style.display = detail.style.display === 'none' ? '' : 'none';
+    });
+  });
+
+  // allow clicking the detail table header ('전투 시간 (sec) / 나 / 적') to close the detail row
+  wrapper.querySelectorAll('.detail-row').forEach(detail => {
+    const thead = detail.querySelector('table thead');
+    if (!thead) return;
+    thead.style.cursor = 'pointer';
+    thead.addEventListener('click', () => {
+      detail.style.display = 'none';
+    });
+  });
 }
 
-/* -----------------------------------------------------------
-   Debug timeline table
------------------------------------------------------------ */
-function logTimeline(logA, logB, delayA, delayB) {
-  const tb = document.querySelector('#logTable tbody');
-  tb.innerHTML = '';
+function buildDetailTableHTML(log) {
+  if (!Array.isArray(log) || log.length === 0) return '<div style="color:#666;padding:8px;">상세 로그가 없습니다.</div>';
 
-  const len = Math.max(logA.length, logB.length);
+  let t = `
+    <table style="width:100%;border-collapse:collapse;background:#fff;">
+      <thead>
+        <tr style="background:#fff1ee;">
+          <th style="padding:8px;border:1px solid #f5d2cc;">전투 시간 (sec)</th>
+          <th style="padding:8px;border:1px solid #f5d2cc;">나</th>
+          <th style="padding:8px;border:1px solid #f5d2cc;">적</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
 
-  for (let i = 0; i < len; i++) {
-    const a = logA[i] || [];
-    const b = logB[i] || [];
-    const t = a[0] || b[0];
+  log.forEach(entry => {
+    const mySkillsHTML = skillIconsHTML(entry.me.skillUsed, entry.me.buffSkillUsed, 48);
+    const enemySkillsHTML = skillIconsHTML(entry.enemy.skillUsed, entry.enemy.buffSkillUsed, 48);
+    const myHp = (entry.me.hp <= 0) ? '☠️' : pretty(entry.me.hp);
+    const enemyHp = (entry.enemy.hp <= 0) ? '☠️' : pretty(entry.enemy.hp);
 
-    const row = document.createElement('tr');
-
-    const isAStart = +t === +delayA;
-    const isBStart = +t === +delayB;
-
-    if (a[1] <= 0) a[1] = 0;
-    if (b[1] <= 0) b[1] = 0;
-    // convert used-skill name arrays (a[2], b[2]) into icon HTML
-    const bSkillsHTML = skillIconsHTML(a[2], a[3]);
-    const aSkillsHTML = skillIconsHTML(b[2], b[3]);
-
-    row.innerHTML = `
-      <td>${t}</td>
-      <td class='${isAStart ? 'highlight' : ''}'>${a[1] ? pretty(+a[1]) : '☠️'}<div style="margin-top:6px">${aSkillsHTML}</div></td>
-      <td class='${isBStart ? 'highlight' : ''}'>${b[1] ? pretty(+b[1]) : '☠️'}<div style="margin-top:6px">${bSkillsHTML}</div></td>
+    t += `
+      <tr>
+        <td style="padding:6px;border:1px solid #f5d2cc;">${entry.me.time}</td>
+        <td style="padding:6px;border:1px solid #f5d2cc;text-align:left;">${myHp}<div style="margin-top:6px">${mySkillsHTML}</div></td>
+        <td style="padding:6px;border:1px solid #f5d2cc;text-align:left;">${enemyHp}<div style="margin-top:6px">${enemySkillsHTML}</div></td>
+      </tr>
     `;
+  });
 
-    tb.appendChild(row);
-  }
+  t += `
+      </tbody>
+    </table>
+  `;
+
+  return t;
 }
 
-function logTimeline2(battleResults) {
-  const tb = document.querySelector('#logTable tbody');
-  tb.innerHTML = '';
-
-  for (const battleResult of battleResults) {
-    const row = document.createElement('tr');
-
-    // 남은 hp가 0 미만이면 0으로 변경
-    if (battleResult.me.hp < 0) battleResult.me.hp = 0;
-    if (battleResult.enemy.hp < 0) battleResult.enemy.hp = 0;
-
-    // 해당 시점에 Sill이 사용된 경우 Skill Icon 추가
-    const mySkillsHTML = skillIconsHTML(battleResult.me.skillUsed, battleResult.me.buffSkillUsed);
-    const enemySkillsHTML = skillIconsHTML(battleResult.enemy.skillUsed, battleResult.enemy.buffSkillUsed);
-    
-    row.innerHTML = `
-      <td>${battleResult.me.time}</td>
-      <td class='highlight'>${battleResult.me.hp ? pretty(+battleResult.me.hp) : '☠️'}<div style="margin-top:6px">${mySkillsHTML}</div></td>
-      <td class='highlight'>${battleResult.enemy.hp ? pretty(+battleResult.enemy.hp) : '☠️'}<div style="margin-top:6px">${enemySkillsHTML}</div></td>
-    `;
-
-    tb.appendChild(row);
-  }
-}
+// 상세 로그는 각 시뮬레이션 행 아래에 드롭다운 형태로 렌더됩니다.
 
 // 입력으로 받은 객체가 외부에서 재사용되는 참조일 수 있으므로,
 // 내부에서 수정해도 원본에 영향이 가지 않도록 깊은 복사합니다.
