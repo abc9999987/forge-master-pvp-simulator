@@ -422,7 +422,7 @@ function loadFighter(prefix) {
   return {
     power: num(prefix + '_power'),
     hits: num(prefix + '_hitrate'),
-    attackSpeed: num(prefix + '_speedbuff') / 100,
+    attackSpeed: 1 + (num(prefix + '_speedbuff') / 100),
     dbAttackRate: num(prefix + '_doubleproc') / 100,
     critRate: num(prefix + '_critproc') / 100,
     critDmg: 1.2 + (num(prefix + '_critbonus') / 100),
@@ -431,6 +431,7 @@ function loadFighter(prefix) {
     block: num(prefix + '_guard') / 100,
     hp0: num(prefix + '_vital'),
     hpMax: maxHP,
+    hpMult: num(prefix + '_hpmult') / 100,
     delay: num(prefix + '_startup'),
     skillDmgBonus: num(prefix + '_skillbonus') / 100,
     damageBonus: num(prefix + '_damagebonus') / 100,
@@ -445,115 +446,153 @@ function getDamageByHit(user) {
   return damage;
 }
 
-function battleSimulation(defender, attacker, attackerSkillName) {
-  const attackerSkills = getSelectedSkillObjects(attackerSkillName);
-  const defenderSkillName = attackerSkillName === 'mySkills' ? 'enemySkills' : 'mySkills';
-  const defenderSkill = getSelectedSkillObjects(defenderSkillName);
+function battleSimulation2(me, enemy) {
+  me = clone(me);
+  me.current = clone(me);
+  me.current.hp = me.hpMax;
+  enemy = clone(enemy);
+  enemy.current = clone(enemy);
+  enemy.current.hp = enemy.hpMax;
 
-  let hpMax = defender.hpMax;
-  let hp = defender.hpMax;
+  // 원거리의 경우 첫 공격까지 4초가 소요 됨.
+  let delayTime = 40 + Math.max(me.delay * 10, enemy.delay * 10);
+
+  let myEndTime = 0;
+  let enemyEndTime = 0;
+  const timeline = [];
+
+  const mySkills = clone(getSelectedSkillObjects('mySkills'));
+  const enemySkills = clone(getSelectedSkillObjects('enemySkills'));
   let t = 0;
   const dt = 1;
 
-  const timeline = [];
-  const hitBySec = parseFloat(((attacker.hits * (1 / attacker.attackSpeed))).toFixed(1)) * 10;
-  let hitTimer = hitBySec + attacker.delay * 10;
+  // hit sec는 결과적으로 drain sec와 같음
+  const myHitBySec = parseFloat(((me.hits * (1 / me.attackSpeed))).toFixed(1)) * 10;
+  let myHitTimer = myHitBySec + me.delay * 10 < 41 ? 41 : myHitBySec + me.delay * 10;
 
-  const drainBySec = parseFloat(((defender.hits * (1 / defender.attackSpeed))).toFixed(1)) * 10;
-  let drainTimer = drainBySec + defender.delay * 10;
-
-  const prefix = attackerSkillName === 'mySkills' ? 'b' : 'a';
-  const defenderHpMult = num(prefix + '_hpmult') / 100;
-
-  while (hp > 0 && t < 600) {
-    let skillUsed = [];
-    let buffSkillUsed = [];
-
-    // 방어자 Skill 처리
-    if (defenderSkill !== null) {
-      for (const defSkill of defenderSkill) {
-        if (defSkill.bufftime !== 0 && t === defSkill.bufftime * 10) {
-          // 버프 지속 시간 종료 시 체력의 비율 만큼 원래 상태로 복원
-          hp = defender.hpMax * (hp / hpMax);
-          hpMax = defender.hpMax;
-          // 버프 지속 시간 종료 시 원래 상태로 복원
-          defender.power -= defSkill.addAtk;
-          // 버프의 경우 지속 시간 종료 시점에 cooltime 시작됨.
-          defSkill.cooltime = defSkill.bufftime + defSkill.defaultCooltime * (1 - defender.skillReduceCooltime);
-        }
-
-        if (t === defSkill.cooltime * 10) {
-          if (defSkill.isBuff === true) {
-            // 버프 스킬 처리 로직 (예: 공격력 증가, 체력 증가 등)
-            defender.power += defSkill.addAtk;
-            hp += (defSkill.addHP * defenderHpMult);
-            hpMax = defender.hpMax + (defSkill.addHP * defenderHpMult);
-            defSkill.bufftime = t/10 + defSkill.defaultBufftime;
-          }
-        }
-      }
+  const enemyHitBySec = parseFloat(((enemy.hits * (1 / enemy.attackSpeed))).toFixed(1)) * 10;
+  let enemyHitTimer = enemyHitBySec + enemy.delay * 10 < 41 ? 41 : enemyHitBySec + enemy.delay * 10;
+  
+  while (t < 601) {
+    if (t < delayTime - 10) {
+      t += dt;
+      // 원거리 기준
+      continue;
     }
 
-    // 체젠은 0.1초 단위로 계산
-    let heal = (defender.hpMax * defender.regen)/10;
-
-    // defender의 드레인 타이밍에 맞춰 흡혈 적용
-    if (t === drainTimer) {
-      const drain = getDamageByHit(defender) * defender.drain;
-      heal += drain;
-      drainTimer += drainBySec;
+    if (me.current.hp <= 0) {
+      myEndTime = ((t-1)/10).toFixed(1);
+      break;
     }
 
-    hp += heal;
-
-    if (hp > hpMax) hp = hpMax;
-
-    // 공격자 Skill 처리
-    if (attackerSkills !== null) {
-      for (const atkSkill of attackerSkills) {
-        if (atkSkill.bufftime !== 0 && t === atkSkill.bufftime * 10) {
-          // 버프 지속 시간 종료 시 원래 상태로 복원
-          attacker.power -= atkSkill.addAtk;
-          // 버프의 경우 지속 시간 종료 시점에 cooltime 시작됨.
-          atkSkill.cooltime = atkSkill.bufftime + atkSkill.defaultCooltime * (1 - attacker.skillReduceCooltime);
-        }
-
-        if (t === atkSkill.cooltime * 10) {
-          if (atkSkill.isBuff === true) {
-            // 버프 스킬 처리 로직 (예: 공격력 증가, 체력 증가 등)
-            attacker.power += atkSkill.addAtk;
-            atkSkill.bufftime = t/10 + atkSkill.defaultBufftime;
-            buffSkillUsed.push(atkSkill.name);
-          } else {
-            // 공격 스킬 처리 로직
-            hp -= atkSkill.damage * atkSkill.hit * (1 + attacker.skillDmgBonus) * (1 + attacker.damageBonus) * (1 - defender.block);
-            atkSkill.cooltime += atkSkill.defaultCooltime * (1 - attacker.skillReduceCooltime);
-            skillUsed.push(atkSkill.name);
-          }
-        }
-      }
-    }
-    // attacker의 히트 타이밍에 맞춰 데미지 적용
-    if (t === hitTimer) {
-      const damage = getDamageByHit(attacker) * (1 - defender.block);
-      hp -= damage;
-      hitTimer += hitBySec;
+    if (enemy.current.hp <= 0) {
+      enemyEndTime = ((t-1)/10).toFixed(1);
+      break;
     }
 
-    timeline.push([(t/10).toFixed(1), hp, skillUsed, buffSkillUsed]);
+    if ((me.current.hp <= 0 && enemy.current.hp <= 0) || t === 601) {
+      break;
+    }
+
+    const myBattleData = {
+      hitTimer: myHitTimer,
+      hitBySec: myHitBySec
+    }
+    const myBattleInfoOnTick = calculateBattle(t, me, enemy, mySkills, myBattleData);
+    myHitTimer = myBattleInfoOnTick.hitTimer;
+    me = myBattleInfoOnTick.me;
+
+    const enemyBattleData = {
+      hitTimer: enemyHitTimer,
+      hitBySec: enemyHitBySec
+    }
+    const enemyBattleInfoOnTick = calculateBattle(t, enemy, me, enemySkills, enemyBattleData);
+    enemyHitTimer = enemyBattleInfoOnTick.hitTimer;
+    enemy = enemyBattleInfoOnTick.me; // enemyBattleInfoOnTick에서는 me가 enemy임.
+    
+    
+    const myHpOnTick = me.current.hp - enemyBattleInfoOnTick.damage + myBattleInfoOnTick.heal;
+    const enemyHpOnTick = enemy.current.hp - myBattleInfoOnTick.damage + enemyBattleInfoOnTick.heal;
+    console.log(t, me.current.hp, enemyBattleInfoOnTick.damage, myBattleInfoOnTick.heal, myHpOnTick);
+    me.current.hp = myHpOnTick > me.current.hpMax ? me.current.hpMax : myHpOnTick;
+    enemy.current.hp = enemyHpOnTick > enemy.current.hpMax ? enemy.current.hpMax : enemyHpOnTick;
+
+    const myBattleResultOnTick = {
+      time: (t/10).toFixed(1),
+      hp: me.current.hp,
+      skillUsed: myBattleInfoOnTick.skillUsed,
+      buffSkillUsed: myBattleInfoOnTick.buffSkillUsed
+    }
+
+    const enemyBattleResultOnTick = {
+      time: (t/10).toFixed(1),
+      hp: enemy.current.hp,
+      skillUsed: enemyBattleInfoOnTick.skillUsed,
+      buffSkillUsed: enemyBattleInfoOnTick.buffSkillUsed
+    }
+
+    timeline.push({ me: myBattleResultOnTick, enemy: enemyBattleResultOnTick });
     t += dt;
   }
 
-  // 전투 종료 후 모든 스킬의 쿨타임 초기화
-  for (const skill of defenderSkill) {
-    skill.cooltime = 5;
-  }
+  return { time: t === 601 ? Infinity : ((t-1)/10), log: timeline, myEndHp: me.current.hp, enemyEndHp: enemy.current.hp, myEndTime, enemyEndTime };
+}
 
-  for (const skill of attackerSkills) {
-    skill.cooltime = 5;
-  }
+function calculateBattle(t, me, enemy, skills, myBattleData) {
+    let damage = 0;
+    let skillUsed = [];
+    let buffSkillUsed = [];
 
-  return { time: hp > 0 ? Infinity : ((t-1)/10), log: timeline, hp };
+    hitTimer = myBattleData.hitTimer;
+    hitBySec = myBattleData.hitBySec;
+
+    // 내 Skill 처리
+    if (skills !== null && skills.length > 0) {
+      for (const skill of skills) {
+        // 버프 만료
+        if (skill.bufftime !== 0 && t === skill.bufftime * 10) {
+          // 버프 지속 시간 종료 시 체력의 비율 만큼 원래 상태로 복원
+          const resetHpMax = me.current.hpMax - (skill.addHP * me.hpMult);
+          me.current.hp = resetHpMax * (me.current.hp/me.current.hpMax);
+          me.current.hpMax = resetHpMax;
+          // 버프 지속 시간 종료 시 원래 상태로 복원
+          me.current.power -= skill.addAtk;
+          // 버프의 경우 지속 시간 종료 시점에 cooltime 시작됨.
+          skill.cooltime = skill.bufftime + skill.defaultCooltime * (1 - me.skillReduceCooltime);
+        }
+
+        if (t === skill.cooltime * 10) {
+          if (skill.isBuff === true) {
+            // 버프 스킬 처리 로직 (예: 공격력 증가, 체력 증가 등)
+            me.current.power += skill.addAtk;
+            me.current.hp += (skill.addHP * me.hpMult);
+            me.current.hpMax += (skill.addHP * me.hpMult);
+            skill.bufftime = t/10 + skill.defaultBufftime;
+            buffSkillUsed.push(skill.name);
+          } else {
+            // 공격 스킬 처리 로직
+            damage = skill.damage * skill.hit * (1 + me.skillDmgBonus) * (1 + me.damageBonus) * (1 - enemy.block);
+            skill.cooltime += skill.defaultCooltime * (1 - me.skillReduceCooltime);
+            skillUsed.push(skill.name);
+          }
+        }
+      }
+    }
+
+    // 체젠은 0.1초 단위로 계산, 체뻥은 적용하지 않음.
+    let heal = (me.hpMax * me.regen)/10;
+
+    // 내 Hit 타이밍에 맞춰 데미지 / 흡혈 적용
+    if (t === hitTimer) {
+      const getDamage = getDamageByHit(me.current);
+      const drain = getDamage * me.drain;
+      heal += drain;
+
+      damage += getDamage * (1 - enemy.block);
+      hitTimer += hitBySec;
+    }
+
+    return { damage, heal, skillUsed, buffSkillUsed, me, hitTimer };
 }
 
 /* -----------------------------------------------------------
@@ -566,34 +605,29 @@ function startBattle() {
 
   let me = loadFighter('a');
   let enemy = loadFighter('b');
-  const A_TTD = battleSimulation(me, enemy, 'enemySkills');
-
-  me = loadFighter('a');
-  enemy = loadFighter('b');
-  const B_TTD = battleSimulation(enemy, me, 'mySkills');
-
+  const battleResult = battleSimulation2(me, enemy);
   const out = document.getElementById('battleResult');
 
   let msg = `
-    내가 쓰러진 시간: ${A_TTD.time.toFixed(1)}s<br>
-    적이 쓰러진 시간: ${B_TTD.time.toFixed(1)}s<br><br>
+    내가 쓰러진 시간: ${battleResult.myEndTime === 0 ? '쓰러지지 않았다!' : battleResult.myEndTime + 's'}<br>
+    적이 쓰러진 시간: ${battleResult.enemyEndTime === 0 ? '쓰러지지 않았다!' : battleResult.enemyEndTime + 's'}<br><br>
   `;
 
-  if (A_TTD.time === Infinity && B_TTD.time === Infinity) {
+  if (battleResult.time === Infinity) {
     msg = `
-        나의 남은 체력: ${pretty(A_TTD.hp)}<br>
-        적의 남은 체력: ${pretty(B_TTD.hp)}<br><br>
+        나의 남은 체력: ${pretty(battleResult.myEndHp)}<br>
+        적의 남은 체력: ${pretty(battleResult.enemyEndHp)}<br><br>
     `;
 
-    if (A_TTD.hp > B_TTD.hp)
+    if (battleResult.myEndHp > battleResult.enemyEndHp)
       msg += '🥇 승리';
-    else if (B_TTD.hp > A_TTD.hp)
+    else if (battleResult.enemyEndHp > battleResult.myEndHp)
       msg += '☠️ 패배';
     else
     msg += '🤝 무승부';
-  } else if (A_TTD.time > B_TTD.time)
+  } else if (battleResult.myEndTime === 0)
     msg += '🥇 승리';
-  else if (B_TTD.time > A_TTD.time)
+  else if (battleResult.enemyEndTime === 0)
     msg += '☠️ 패배';
   else
     msg += '🤝 무승부';
@@ -602,7 +636,7 @@ function startBattle() {
 
   me = loadFighter('a');
   enemy = loadFighter('b');
-  logTimeline(A_TTD.log, B_TTD.log, me.delay, enemy.delay);
+  logTimeline2(battleResult.log);
 }
 
 /* -----------------------------------------------------------
@@ -639,3 +673,40 @@ function logTimeline(logA, logB, delayA, delayB) {
     tb.appendChild(row);
   }
 }
+
+function logTimeline2(battleResults) {
+  const tb = document.querySelector('#logTable tbody');
+  tb.innerHTML = '';
+
+  for (const battleResult of battleResults) {
+    const row = document.createElement('tr');
+
+    // 남은 hp가 0 미만이면 0으로 변경
+    if (battleResult.me.hp < 0) battleResult.me.hp = 0;
+    if (battleResult.enemy.hp < 0) battleResult.enemy.hp = 0;
+
+    // 해당 시점에 Sill이 사용된 경우 Skill Icon 추가
+    const mySkillsHTML = skillIconsHTML(battleResult.me.skillUsed, battleResult.me.buffSkillUsed);
+    const enemySkillsHTML = skillIconsHTML(battleResult.enemy.skillUsed, battleResult.enemy.buffSkillUsed);
+    
+    row.innerHTML = `
+      <td>${battleResult.me.time}</td>
+      <td class='highlight'>${battleResult.me.hp ? pretty(+battleResult.me.hp) : '☠️'}<div style="margin-top:6px">${mySkillsHTML}</div></td>
+      <td class='highlight'>${battleResult.enemy.hp ? pretty(+battleResult.enemy.hp) : '☠️'}<div style="margin-top:6px">${enemySkillsHTML}</div></td>
+    `;
+
+    tb.appendChild(row);
+  }
+}
+
+// 입력으로 받은 객체가 외부에서 재사용되는 참조일 수 있으므로,
+// 내부에서 수정해도 원본에 영향이 가지 않도록 깊은 복사합니다.
+const clone = (obj) => {
+  if (typeof structuredClone === 'function') return structuredClone(obj);
+  try {
+    return JSON.parse(JSON.stringify(obj));
+  } catch (e) {
+    // 구조화 불가한 값이 있는 경우 얕은 복사로 대체
+    return Object.assign({}, obj);
+  }
+};
