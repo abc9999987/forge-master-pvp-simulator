@@ -420,6 +420,7 @@ function loadFighter(prefix) {
   const maxHP = num(prefix + '_vital') * (num(prefix + '_hpmult') / 100);
 
   return {
+    userName: prefix === 'a' ? '나' : '적',
     power: num(prefix + '_power'),
     hits: num(prefix + '_hitrate'),
     attackSpeed: 1 + (num(prefix + '_speedbuff') / 100),
@@ -446,7 +447,7 @@ function getDamageByHit(user) {
   return damage;
 }
 
-function battleSimulation2(me, enemy) {
+function battleSimulation(me, enemy) {
   me = clone(me);
   me.current = clone(me);
   me.current.hp = me.hpMax;
@@ -513,7 +514,7 @@ function battleSimulation2(me, enemy) {
     
     const myHpOnTick = me.current.hp - enemyBattleInfoOnTick.damage + myBattleInfoOnTick.heal;
     const enemyHpOnTick = enemy.current.hp - myBattleInfoOnTick.damage + enemyBattleInfoOnTick.heal;
-    console.log(t, me.current.hp, enemyBattleInfoOnTick.damage, myBattleInfoOnTick.heal, myHpOnTick);
+    
     me.current.hp = myHpOnTick > me.current.hpMax ? me.current.hpMax : myHpOnTick;
     enemy.current.hp = enemyHpOnTick > enemy.current.hpMax ? enemy.current.hpMax : enemyHpOnTick;
 
@@ -610,7 +611,7 @@ function startBattle() {
   for (let run = 1; run <= NUM_RUNS; run++) {
     let me = loadFighter('a');
     let enemy = loadFighter('b');
-    const battleResult = battleSimulation2(me, enemy);
+    const battleResult = battleSimulation(me, enemy);
     simResults.push({
       run,
       result: battleResult
@@ -623,9 +624,16 @@ function startBattle() {
 
   simResults.forEach(sr => {
     const br = sr.result;
-    if (br.myEndTime === 0) wins++;
-    else if (br.enemyEndTime === 0) losses++;
-    else draws++;
+    if (br.myEndTime === 0 && br.enemyEndTime === 0) {
+      console.log(br.myEndHp, br.enemyEndHp, br.myEndHp > br.enemyEndHp);
+      if (br.myEndHp > br.enemyEndHp) wins++;
+      else if (br.myEndHp < br.enemyEndHp) losses++;
+      else draws++;
+    } else {
+      if (br.myEndTime === 0) wins++;
+      else if (br.enemyEndTime === 0) losses++;
+      else draws++;
+    }
   });
 
   const winRate = ((wins / NUM_RUNS) * 100).toFixed(1);
@@ -661,8 +669,13 @@ function renderSimulationResults(simResults) {
   simResults.forEach((sr, idx) => {
     const br = sr.result;
     let winner = '무승부';
-    if (br.myEndTime === 0) winner = '승리';
-    else if (br.enemyEndTime === 0) winner = '패배';
+    if (br.myEndTime === 0 && br.enemyEndTime === 0) {
+      if (br.myEndHp > br.enemyEndHp)  winner = '승리';
+      else if (br.myEndHp < br.enemyEndHp) winner = '패배';
+    } else {
+      if (br.myEndTime === 0)  winner = '승리';
+      else if (br.enemyEndTime === 0) winner = '패배';
+    }
 
     html += `
       <tr class="summary-row" data-idx="${idx}" style="border:1px solid #f5d2cc;text-align:center;cursor:pointer;">
