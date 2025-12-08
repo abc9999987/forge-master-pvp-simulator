@@ -655,6 +655,14 @@ function startBattle() {
 
   // Display results table (each 행 클릭 시 상세 로그 확장)
   renderSimulationResults(simResults);
+
+  // Auto-scroll to results table
+  const resultsWrapper = document.getElementById('resultsTableWrapper');
+  if (resultsWrapper) {
+    setTimeout(() => {
+      resultsWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
 }
 
 function renderSimulationResults(simResults) {

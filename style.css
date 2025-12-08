@@ -179,14 +179,20 @@ table td {
 }
 
 /* Detail row header (clickable) hover */
-#resultsTableWrapper .detail-row table thead th {
+#resultsTableWrapper .detail-row table thead tr {
     cursor: pointer;
-    transition: background-color 120ms ease, color 120ms ease;
+    transition: background-color 120ms ease, color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
 }
 
-#resultsTableWrapper .detail-row table thead th:hover {
-    background:#ffe6df;
-    color:#333;
+#resultsTableWrapper .detail-row table thead tr:hover {
+    background: #fff5f2;
+}
+
+#resultsTableWrapper .detail-row table thead tr:hover th {
+    color: #492a21;
+    background: #e6c6be;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(255, 107, 90, 0.2);
 }
 
 /* Detail table body cells hover to indicate interactivity */
