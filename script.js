@@ -44,6 +44,7 @@ function createInputs(container, prefix) {
       }
 
       if (key === 'reduceCooltime' && numValue > 80) input.value = 80;
+      if (key === 'guard' && numValue > 60) input.value = 60;
       if (numValue < 0) input.value = 0;
     });
     
@@ -68,12 +69,12 @@ createInputs(document.querySelector('.groupB'), 'b');
 const DEFAULT_INPUTS = {
   a: {
     power: 100, hitrate: 1.7, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
-    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 500, startup: 0,
+    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 300, startup: 0,
     skillbonus: 0, damagebonus: 0, reduceCooltime: 0
   },
   b: {
     power: 100, hitrate: 1.7, speedbuff: 0, doubleproc: 0, critproc: 0, critbonus: 0,
-    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 500, startup: 0,
+    drain: 0, regen: 0, guard: 0, vital: 1000, hpmult: 300, startup: 0,
     skillbonus: 0, damagebonus: 0, reduceCooltime: 0
   }
 };
@@ -167,7 +168,6 @@ const SKILL_NAME = [
 // 이 배열에 추가하면 해당 스킬은 모든 셀렉트에서 비활성화됩니다.
 // 예: const IGNORE_SKILLS = ['고기', '드론'];
 const IGNORE_SKILLS = [
-  '운석',
   '쇄도', '벌레', '번개',
   '기총소사', '드론'
 ];
@@ -360,7 +360,7 @@ const SKILL_DATA = {
   '화살비': { name: '화살비', isBuff: false, damage: 14500, hit: 8, cooltime: 5, defaultCooltime: 11 },
   '버프': { name: '버프', isBuff: true, damage: 0, hit: 0, addAtk: 12000, addHP: 96000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 10 },
   // 전설
-  '운석': { name: '운석', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '운석': { name: '운석', isBuff: false, damage: 110000, hit: 3, cooltime: 5, defaultCooltime: 10 },
   '폭탄': { name: '폭탄', isBuff: false, damage: 336000, hit: 1, cooltime: 5, defaultCooltime: 7 },
   '사기': { name: '사기', isBuff: true, damage: 0, hit: 0, addAtk: 44800, addHP: 358000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 10 },
   // 궁극
@@ -440,9 +440,20 @@ function loadFighter(prefix) {
   };
 }
 
-function getDamageByHit(user) {
+function getDamageByHit(user, blockRate = 0) {
   const critRate = Math.random() <= user.critRate ? user.critDmg : 1;
-  const doubleRate = Math.random() <= user.dbAttackRate ? 2 : 1;
+  let doubleRate = Math.random() <= user.dbAttackRate ? 2 : 1;
+
+  if (doubleRate === 2) {
+    if (Math.random() < blockRate) {
+      doubleRate -= 1;
+    }
+  }
+
+  if (Math.random() < blockRate) {
+    doubleRate -= 1;
+  }
+
   const damage = user.power * critRate * doubleRate;
   return damage;
 }
@@ -510,7 +521,6 @@ function battleSimulation(me, enemy) {
     const enemyBattleInfoOnTick = calculateBattle(t, enemy, me, enemySkills, enemyBattleData);
     enemyHitTimer = enemyBattleInfoOnTick.hitTimer;
     enemy = enemyBattleInfoOnTick.me; // enemyBattleInfoOnTick에서는 me가 enemy임.
-    
     
     const myHpOnTick = me.current.hp - enemyBattleInfoOnTick.damage + myBattleInfoOnTick.heal;
     const enemyHpOnTick = enemy.current.hp - myBattleInfoOnTick.damage + enemyBattleInfoOnTick.heal;
@@ -585,15 +595,16 @@ function calculateBattle(t, me, enemy, skills, myBattleData) {
 
     // 내 Hit 타이밍에 맞춰 데미지 / 흡혈 적용
     if (t === hitTimer) {
-      const getDamage = getDamageByHit(me.current);
+      const getDamage = getDamageByHit(me.current, enemy.block);
       const drain = getDamage * me.drain;
-      heal += drain;
+      heal += drain*0.33;
 
-      damage += getDamage * (1 - enemy.block);
+      damage += getDamage;
       hitTimer += hitBySec;
     }
 
-    return { damage, heal, skillUsed, buffSkillUsed, me, hitTimer };
+    // Issue. 체력 회복에 보정값이 있는 듯 함. /2.3 로 가정.
+    return { damage, heal: heal, skillUsed, buffSkillUsed, me, hitTimer };
 }
 
 /* -----------------------------------------------------------
@@ -625,7 +636,6 @@ function startBattle() {
   simResults.forEach(sr => {
     const br = sr.result;
     if (br.myEndTime === 0 && br.enemyEndTime === 0) {
-      console.log(br.myEndHp, br.enemyEndHp, br.myEndHp > br.enemyEndHp);
       if (br.myEndHp > br.enemyEndHp) wins++;
       else if (br.myEndHp < br.enemyEndHp) losses++;
       else draws++;
