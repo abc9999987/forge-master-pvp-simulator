@@ -569,7 +569,7 @@ function calculateBattle(t, me, enemy, skills, myBattleData) {
           // 버프 지속 시간 종료 시 원래 상태로 복원
           me.current.power -= skill.addAtk;
           // 버프의 경우 지속 시간 종료 시점에 cooltime 시작됨.
-          skill.cooltime = skill.bufftime + skill.defaultCooltime * (1 - me.skillReduceCooltime);
+          skill.cooltime = skill.bufftime + Math.round(skill.defaultCooltime * (1 - me.skillReduceCooltime) * 10) / 10;
         }
 
         if (t === skill.cooltime * 10) {
@@ -583,7 +583,7 @@ function calculateBattle(t, me, enemy, skills, myBattleData) {
           } else {
             // 공격 스킬 처리 로직
             damage = skill.damage * skill.hit * (1 + me.skillDmgBonus) * (1 + me.damageBonus) * (1 - enemy.block);
-            skill.cooltime += skill.defaultCooltime * (1 - me.skillReduceCooltime);
+            skill.cooltime += Math.round(skill.defaultCooltime * (1 - me.skillReduceCooltime) * 10) / 10;
             skillUsed.push(skill.name);
           }
         }
