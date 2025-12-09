@@ -169,7 +169,6 @@ const SKILL_NAME = [
 // 예: const IGNORE_SKILLS = ['고기', '드론'];
 const IGNORE_SKILLS = [
   '쇄도', '벌레', '번개',
-  '기총소사', '드론'
 ];
 
 function createSelect(idPrefix) {
@@ -364,13 +363,13 @@ const SKILL_DATA = {
   '폭탄': { name: '폭탄', isBuff: false, damage: 336000, hit: 1, cooltime: 5, defaultCooltime: 7 },
   '사기': { name: '사기', isBuff: true, damage: 0, hit: 0, addAtk: 44800, addHP: 358000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 10 },
   // 궁극
-  '쇄도': { name: '쇄도', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
-  '벌레': { name: '벌레', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
-  '번개': { name: '번개', isBuff: false, damage: 0, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '쇄도': { name: '쇄도', isBuff: false, damage: 548000, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '벌레': { name: '벌레', isBuff: false, damage: 1700000, hit: 1, cooltime: 5, defaultCooltime: 10 },
+  '번개': { name: '번개', isBuff: false, damage: 108000, hit: 1, cooltime: 5, defaultCooltime: 10 },
   // 신화
   '기총소사': { name: '기총소사', isBuff: false, damage: 4860000, hit: 3, cooltime: 5, defaultCooltime: 10 }, // 제보자: S2_한쪽팔없음/Armless (2렙 기준)
-  '드론': { name: '드론', isBuff: false, damage: 1210000, hit: 8, cooltime: 5, defaultCooltime: 10 }, // 제보자: S2_한쪽팔없음/Armless (2렙 기준)
-  '높은 사기': { name: '높은 사기', isBuff: true, damage: 0, hit: 0, addAtk: 2000000, addHP: 16000000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 8 }
+  '드론': { name: '드론', isBuff: false, damage: 1140000, hit: 8, cooltime: 5, defaultCooltime: 20 }, // 제보자: S2_한쪽팔없음/Armless (2렙 기준)
+  '높은 사기': { name: '높은 사기', isBuff: true, damage: 0, hit: 0, addAtk: 1910000, addHP: 15300000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 8 }
 };
 
 // 기본값 반환. SKILL_DATA에 정의되지 않은 스킬을 안전하게 처리하기 위함.
