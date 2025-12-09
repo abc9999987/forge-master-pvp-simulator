@@ -356,7 +356,7 @@ const SKILL_DATA = {
   '광전사': { name: '광전사', isBuff: true, damage: 0, hit: 0, addAtk: 1560, addHP: 0, cooltime: 5, defaultCooltime: 9, bufftime: 0, defaultBufftime: 10 },
   // 서사시
   '가시': { name: '가시', isBuff: false, damage: 24800, hit: 2, cooltime: 5, defaultCooltime: 6 },
-  '화살비': { name: '화살비', isBuff: false, damage: 14500, hit: 8, cooltime: 5, defaultCooltime: 11 },
+  '화살비': { name: '화살비', isBuff: false, damage: 14500, hit: 8, cooltime: 5, defaultCooltime: 10 },
   '버프': { name: '버프', isBuff: true, damage: 0, hit: 0, addAtk: 12000, addHP: 96000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 10 },
   // 전설
   '운석': { name: '운석', isBuff: false, damage: 110000, hit: 3, cooltime: 5, defaultCooltime: 10 },
