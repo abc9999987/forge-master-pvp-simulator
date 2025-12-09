@@ -590,7 +590,7 @@ function calculateBattle(t, me, enemy, skills, myBattleData) {
     }
 
     // 체젠은 0.1초 단위로 계산, 체뻥은 적용하지 않음.
-    let heal = (me.hp0 * me.regen)/10;
+    let heal = me.regen > 0 ? (me.hp0 * me.regen)/10 : 0;
 
     // 내 Hit 타이밍에 맞춰 데미지 / 흡혈 적용
     if (t === hitTimer) {
