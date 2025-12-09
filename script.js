@@ -368,7 +368,7 @@ const SKILL_DATA = {
   '번개': { name: '번개', isBuff: false, damage: 108000, hit: 1, cooltime: 5, defaultCooltime: 10 },
   // 신화
   '기총소사': { name: '기총소사', isBuff: false, damage: 4860000, hit: 3, cooltime: 5, defaultCooltime: 10 }, // 제보자: S2_한쪽팔없음/Armless (2렙 기준)
-  '드론': { name: '드론', isBuff: false, damage: 1140000, hit: 8, cooltime: 5, defaultCooltime: 20 }, // 제보자: S2_한쪽팔없음/Armless (2렙 기준)
+  '드론': { name: '드론', isBuff: false, damage: 1140000, hit: 8, cooltime: 5, defaultCooltime: 18 }, // 제보자: S2_한쪽팔없음/Armless (2렙 기준)
   '높은 사기': { name: '높은 사기', isBuff: true, damage: 0, hit: 0, addAtk: 1910000, addHP: 15300000, cooltime: 5, defaultCooltime: 10, bufftime: 0, defaultBufftime: 8 }
 };
 
